@@ -1,0 +1,7 @@
+# Copia este archivo a local.properties y reemplaza TU_GOOGLE_MAPS_API_KEY.
+# local.properties no se sube a Git (está en .gitignore).
+# Las líneas sdk.dir y flutter.sdk las genera Flutter al ejecutar; si faltan, añádelas con tus rutas.
+#
+sdk.dir=C:\\path\\to\\Android\\sdk
+flutter.sdk=C:\\path\\to\\flutter
+maps.apiKey=TU_GOOGLE_MAPS_API_KEY

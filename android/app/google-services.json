@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "343927315522",
+    "project_id": "lambda-c242a",
+    "storage_bucket": "lambda-c242a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:343927315522:android:3fc2b06f783335800221db",
+        "android_client_info": {
+          "package_name": "com.example.lambda_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "343927315522-1oomosn0l6s1h90irgmesf5gu99f8091.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.lambda_app",
+            "certificate_hash": "2bd065b0cda0d453c961fab541048dde9338cd94"
+          }
+        },
+        {
+          "client_id": "343927315522-ls1tnek8d1d6hcp68nv46n5mpjaji3d7.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyABK9sStfV1LThdx1xeojKLuj444jGAOPY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "343927315522-ls1tnek8d1d6hcp68nv46n5mpjaji3d7.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "343927315522-fpgsg4jj217bjcje719qdl1d1tbsadq7.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.lambdaApp"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

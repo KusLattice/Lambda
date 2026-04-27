@@ -1,0 +1,5 @@
+// Copia este archivo a Config.xcconfig y reemplaza con tu API key de Google Maps.
+// Config.xcconfig no se sube a Git (está en .gitignore).
+//
+// Cómo obtener la key: Google Cloud Console → APIs y servicios → Credenciales
+MAPS_API_KEY=TU_GOOGLE_MAPS_API_KEY

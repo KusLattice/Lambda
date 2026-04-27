@@ -1,0 +1,4 @@
+// Valor por defecto; Config.xcconfig (gitignore) puede sobrescribir con tu API key.
+MAPS_API_KEY = REPLACE_ME
+#include? "Config.xcconfig"
+#include "Generated.xcconfig"
