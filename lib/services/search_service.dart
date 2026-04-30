@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:lambda_app/config/app_config.dart';
 import 'package:lambda_app/providers/semantic_search_provider.dart';
+import 'package:flutter/foundation.dart';
 
 class SearchService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -11,7 +12,7 @@ class SearchService {
   SearchService() {
     _model = GenerativeModel(
       model: 'gemini-1.5-flash',
-      apiKey: AppConfig.mapsApiKey,
+      apiKey: AppConfig.geminiApiKey,
     );
   }
 
@@ -114,7 +115,7 @@ Responde estrictamente en formato JSON:
         'keywords': List<String>.from(data['keywords'] ?? []),
       };
     } catch (e) {
-      print('Search Gemini Error: $e');
+      debugPrint('Search Gemini Error: $e');
       return {'categories': [], 'keywords': []};
     }
   }
@@ -126,7 +127,7 @@ Responde estrictamente en formato JSON:
     List<String> keywords,
   ) async {
     try {
-      final snap = await _firestore.collection(collectionPath).get();
+      final snap = await _firestore.collection(collectionPath).limit(200).get();
       final results = <SemanticResult>[];
 
       for (var doc in snap.docs) {
@@ -189,7 +190,7 @@ Responde estrictamente en formato JSON:
       }
       return results;
     } catch (e) {
-      print('Search Error in $collectionPath: $e');
+      debugPrint('Search Error in $collectionPath: $e');
       return [];
     }
   }
@@ -242,7 +243,7 @@ Responde estrictamente en formato JSON:
       }
       return results;
     } catch (e) {
-      print('Search Messages Error: $e');
+      debugPrint('Search Messages Error: $e');
       return [];
     }
   }

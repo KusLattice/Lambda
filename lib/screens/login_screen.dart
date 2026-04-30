@@ -6,6 +6,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:lambda_app/models/user_model.dart';
 import 'package:lambda_app/providers/auth_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 // Enum para el modo de autenticación principal
 enum _AuthMode { email, phone }
@@ -60,8 +61,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
   Future<void> _loadSavedCredentials() async {
     final prefs = await SharedPreferences.getInstance();
+    const secureStorage = FlutterSecureStorage();
     final savedEmail = prefs.getString('saved_email');
-    final savedPassword = prefs.getString('saved_password');
+    final savedPassword = await secureStorage.read(key: 'saved_password');
     if (savedEmail != null && savedPassword != null) {
       if (mounted) {
         setState(() {
@@ -666,12 +668,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         final authState = ref.read(authProvider);
         if (!authState.hasError && authState.value != null) {
           final prefs = await SharedPreferences.getInstance();
+          const secureStorage = FlutterSecureStorage();
           if (_rememberMe) {
             await prefs.setString('saved_email', email);
-            await prefs.setString('saved_password', password);
+            await secureStorage.write(key: 'saved_password', value: password);
           } else {
             await prefs.remove('saved_email');
-            await prefs.remove('saved_password');
+            await secureStorage.delete(key: 'saved_password');
           }
         }
       }

@@ -8,11 +8,19 @@ class AppConfig {
   /// En producción: flutter run --dart-define=MAPS_API_KEY=tu_key
   /// Si no se pasa, usa [defaultMapsApiKey] (solo desarrollo).
   static String get mapsApiKey =>
-      String.fromEnvironment('MAPS_API_KEY', defaultValue: defaultMapsApiKey);
+      const String.fromEnvironment('MAPS_API_KEY', defaultValue: defaultMapsApiKey);
 
   /// Clave por defecto (desarrollo/local). En producción usar --dart-define.
-  static const String defaultMapsApiKey =
-      'AIzaSyDqxltfJNA6I_sqFiTpmRHn4ApiC2hh6Z8';
+  /// MUST be passed via --dart-define=MAPS_API_KEY=... Nunca comitear API keys.
+  static const String defaultMapsApiKey = '';
+
+  /// API key para Weather Service.
+  static String get weatherApiKey =>
+      const String.fromEnvironment('WEATHER_API_KEY', defaultValue: '');
+
+  /// API key para Gemini Service.
+  static String get geminiApiKey =>
+      const String.fromEnvironment('GEMINI_API_KEY', defaultValue: '');
 
   /// Valida configuraciones mínimas al arranque. Lanza si falta algo crítico.
   static void validate() {

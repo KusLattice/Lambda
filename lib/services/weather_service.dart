@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
+import '../config/app_config.dart';
 
 class WeatherData {
   final double temp;
@@ -23,13 +24,13 @@ class WeatherData {
 }
 
 class WeatherService {
-  // Usaremos una API gratuita (OpenWeatherMap) con un key de ejemplo o el del usuario si tuviera
+  // Usaremos una API gratuita (OpenWeatherMap) con la key del usuario
   // Por ahora, si falla, devolvemos un mock realista para Chile.
-  static const String _apiKey = 'b6907d289e10d714a6e88b30761fae22'; // Key de ejemplo público común
 
   Future<WeatherData?> getWeather(double lat, double lon) async {
     try {
-      final url = 'https://api.openweathermap.org/data/2.5/weather?lat=$lat&lon=$lon&appid=$_apiKey&units=metric&lang=es';
+      final apiKey = AppConfig.weatherApiKey;
+      final url = 'https://api.openweathermap.org/data/2.5/weather?lat=$lat&lon=$lon&appid=$apiKey&units=metric&lang=es';
       final response = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 5));
 
       if (response.statusCode == 200) {
