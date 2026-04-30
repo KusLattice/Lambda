@@ -180,8 +180,8 @@ class _UpdateDialogState extends State<_UpdateDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async => !widget.isMandatory && !_isDownloading,
+    return PopScope(
+      canPop: !widget.isMandatory && !_isDownloading,
       child: AlertDialog(
         backgroundColor: Colors.grey[900],
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
