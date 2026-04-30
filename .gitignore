@@ -51,3 +51,18 @@ app.*.map.json
 /ios/Flutter/Config.xcconfig
 *.apk
 test/oracleJdk-25/
+
+# Hygiene
+logcat*.txt
+lib_log*.txt
+runtime_logs.txt
+analyze*.txt
+app_runtime_logs.txt
+build_logs*.txt
+apk_*.txt
+flutter_logs.txt
+tools/deploy_ota/
+devices.txt
+devices.json
+temp_news.json
+lint.txt
