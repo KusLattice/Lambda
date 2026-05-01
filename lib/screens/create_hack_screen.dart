@@ -313,7 +313,7 @@ class _CreateHackScreenState extends ConsumerState<CreateHackScreen> {
                         fillColor: Colors.grey[900],
                         enabledBorder: OutlineInputBorder(
                           borderSide: BorderSide(
-                            color: Colors.greenAccent.withOpacity(0.5),
+                            color: Colors.greenAccent.withValues(alpha: 0.5),
                           ),
                         ),
                         focusedBorder: const OutlineInputBorder(
@@ -351,7 +351,7 @@ class _CreateHackScreenState extends ConsumerState<CreateHackScreen> {
                         fillColor: Colors.grey[900],
                         enabledBorder: OutlineInputBorder(
                           borderSide: BorderSide(
-                            color: Colors.greenAccent.withOpacity(0.5),
+                            color: Colors.greenAccent.withValues(alpha: 0.5),
                           ),
                         ),
                         focusedBorder: const OutlineInputBorder(
@@ -374,7 +374,7 @@ class _CreateHackScreenState extends ConsumerState<CreateHackScreen> {
                         fillColor: Colors.grey[900],
                         enabledBorder: OutlineInputBorder(
                           borderSide: BorderSide(
-                            color: Colors.greenAccent.withOpacity(0.5),
+                            color: Colors.greenAccent.withValues(alpha: 0.5),
                           ),
                         ),
                         focusedBorder: const OutlineInputBorder(
@@ -404,7 +404,7 @@ class _CreateHackScreenState extends ConsumerState<CreateHackScreen> {
                                 fillColor: Colors.grey[900],
                                 enabledBorder: OutlineInputBorder(
                                   borderSide: BorderSide(
-                                    color: Colors.greenAccent.withOpacity(0.5),
+                                    color: Colors.greenAccent.withValues(alpha: 0.5),
                                   ),
                                 ),
                                 focusedBorder: const OutlineInputBorder(

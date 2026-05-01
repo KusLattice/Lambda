@@ -148,11 +148,11 @@ class _WeatherBannerState extends ConsumerState<WeatherBanner> {
       decoration: BoxDecoration(
         color: const Color(0xFF1B4D3E), // Verde técnico sólido total
         border: Border(
-          bottom: BorderSide(color: theme.accent.withOpacity(0.3), width: 1.0),
+          bottom: BorderSide(color: theme.accent.withValues(alpha: 0.3), width: 1.0),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -294,7 +294,7 @@ class _WeatherBannerState extends ConsumerState<WeatherBanner> {
         Text(
           label,
           style: TextStyle(
-            color: Colors.white.withOpacity(0.6),
+            color: Colors.white.withValues(alpha: 0.6),
             fontSize: 9,
             fontFamily: 'Courier',
             fontWeight: FontWeight.bold,
@@ -313,11 +313,6 @@ class _WeatherBannerState extends ConsumerState<WeatherBanner> {
     );
   }
 
-  /// Dirección del viento en cardinal a partir de grados
-  String _windDirCardinal(int deg) {
-    const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'];
-    return dirs[((deg % 360) / 45).round() % 8];
-  }
 
   /// Emoji según WMO weather code
   String _weatherEmoji(int code) {

@@ -72,6 +72,7 @@ class User {
     this.visitCount = 0,
     this.contactIds = const [],
     this.representativeIcon,
+    this.isOnline = false,
   });
 
   final String id;
@@ -106,6 +107,7 @@ class User {
   final int visitCount;
   final List<String> contactIds;
   final String? representativeIcon;
+  final bool isOnline;
 
   // Un método 'copyWith' es útil para crear una copia de un usuario
   // con algunos campos modificados, sin mutar el original.
@@ -142,6 +144,7 @@ class User {
     int? visitCount,
     List<String>? contactIds,
     String? representativeIcon,
+    bool? isOnline,
   }) {
     return User(
       id: id ?? this.id,
@@ -177,6 +180,7 @@ class User {
       visitCount: visitCount ?? this.visitCount,
       contactIds: contactIds ?? this.contactIds,
       representativeIcon: representativeIcon ?? this.representativeIcon,
+      isOnline: isOnline ?? this.isOnline,
     );
   }
 
@@ -234,6 +238,7 @@ class User {
       visitCount: map['visitCount'] ?? 0,
       contactIds: List<String>.from(map['contactIds'] ?? []),
       representativeIcon: map['representativeIcon'],
+      isOnline: map['isOnline'] ?? false,
     );
   }
 
@@ -284,6 +289,7 @@ class User {
       'visitCount': visitCount,
       'contactIds': contactIds,
       'representativeIcon': representativeIcon,
+      'isOnline': isOnline,
     };
   }
 }

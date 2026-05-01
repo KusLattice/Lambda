@@ -1,25 +1,57 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    // Documentación: https://go.microsoft.com/fwlink/?linkid=830387
+    // IMPORTANTE: Las API keys se pasan vía dart-define y NUNCA se commitean hardcoded.
+    // Variables requeridas:
+    //   MAPS_API_KEY   → Google Maps, AQI, Geocoding
+    //   WEATHER_API_KEY → WeatherService
+    //   GEMINI_API_KEY  → Búsqueda semántica IA
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "lambda_app",
-            "request": "launch",
-            "type": "dart"
-        },
-        {
-            "name": "lambda_app (profile mode)",
+            "name": "Lambda — Android (debug)",
             "request": "launch",
             "type": "dart",
-            "flutterMode": "profile"
+            "deviceId": "5bb22ec51220",
+            "args": [
+                "--dart-define=MAPS_API_KEY=AIzaSyDqxltfJNA6I_sqFiTpmRHn4ApiC2hh6Z8",
+                "--dart-define=WEATHER_API_KEY=${env:WEATHER_API_KEY}",
+                "--dart-define=GEMINI_API_KEY=${env:GEMINI_API_KEY}"
+            ]
         },
         {
-            "name": "lambda_app (release mode)",
+            "name": "Lambda — Windows (debug)",
             "request": "launch",
             "type": "dart",
-            "flutterMode": "release"
+            "deviceId": "windows",
+            "args": [
+                "--dart-define=MAPS_API_KEY=AIzaSyDqxltfJNA6I_sqFiTpmRHn4ApiC2hh6Z8",
+                "--dart-define=WEATHER_API_KEY=${env:WEATHER_API_KEY}",
+                "--dart-define=GEMINI_API_KEY=${env:GEMINI_API_KEY}"
+            ]
+        },
+        {
+            "name": "Lambda — Android (profile)",
+            "request": "launch",
+            "type": "dart",
+            "deviceId": "5bb22ec51220",
+            "flutterMode": "profile",
+            "args": [
+                "--dart-define=MAPS_API_KEY=AIzaSyDqxltfJNA6I_sqFiTpmRHn4ApiC2hh6Z8",
+                "--dart-define=WEATHER_API_KEY=${env:WEATHER_API_KEY}",
+                "--dart-define=GEMINI_API_KEY=${env:GEMINI_API_KEY}"
+            ]
+        },
+        {
+            "name": "Lambda — Android (release)",
+            "request": "launch",
+            "type": "dart",
+            "deviceId": "5bb22ec51220",
+            "flutterMode": "release",
+            "args": [
+                "--dart-define=MAPS_API_KEY=AIzaSyDqxltfJNA6I_sqFiTpmRHn4ApiC2hh6Z8",
+                "--dart-define=WEATHER_API_KEY=${env:WEATHER_API_KEY}",
+                "--dart-define=GEMINI_API_KEY=${env:GEMINI_API_KEY}"
+            ]
         }
     ]
-}
+}

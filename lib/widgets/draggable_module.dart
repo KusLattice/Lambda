@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 /// Módulo flotante arrastrable del dashboard Lambda.
 ///
@@ -24,13 +25,9 @@ class DraggableModule extends StatefulWidget {
   State<DraggableModule> createState() => _DraggableModuleState();
 }
 
-class _DraggableModuleState extends State<DraggableModule>
-    with SingleTickerProviderStateMixin {
+class _DraggableModuleState extends State<DraggableModule> {
   late Offset _currentPosition;
   bool _isDragging = false;
-
-  late AnimationController _glowController;
-  late Animation<double> _glowAnimation;
 
   static const double _moduleWidth = 90;
   static const double _moduleHeight = 90;
@@ -38,7 +35,6 @@ class _DraggableModuleState extends State<DraggableModule>
   @override
   void initState() {
     super.initState();
-    _currentPosition = widget.position;
     _currentPosition = widget.position;
   }
 
@@ -52,6 +48,8 @@ class _DraggableModuleState extends State<DraggableModule>
   }
 
 
+  late Offset _dragStartPos;
+
   @override
   Widget build(BuildContext context) {
     return Positioned(
@@ -61,11 +59,23 @@ class _DraggableModuleState extends State<DraggableModule>
         clipBehavior: Clip.none,
         children: [
           GestureDetector(
-            onPanStart: (_) => setState(() => _isDragging = true),
-            onPanUpdate: (details) {
-              setState(() => _currentPosition += details.delta);
+            onLongPressStart: (_) {
+              HapticFeedback.heavyImpact();
+              setState(() {
+                _isDragging = true;
+                _dragStartPos = _currentPosition;
+              });
             },
-            onPanEnd: (_) {
+            onLongPressMoveUpdate: (details) {
+              setState(() {
+                _currentPosition = _dragStartPos + details.localOffsetFromOrigin;
+              });
+            },
+            onLongPressEnd: (_) {
+              setState(() => _isDragging = false);
+              widget.onDragEnd(_currentPosition);
+            },
+            onLongPressUp: () {
               setState(() => _isDragging = false);
               widget.onDragEnd(_currentPosition);
             },
@@ -78,19 +88,19 @@ class _DraggableModuleState extends State<DraggableModule>
                 height: _moduleHeight,
                 decoration: BoxDecoration(
                   color: _isDragging
-                      ? Colors.greenAccent.withOpacity(0.15)
-                      : Colors.black.withOpacity(0.4),
+                      ? Colors.greenAccent.withValues(alpha: 0.15)
+                      : Colors.black.withValues(alpha: 0.4),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
                     color: _isDragging
-                        ? Colors.greenAccent.withOpacity(0.8)
-                        : Colors.white.withOpacity(0.05),
+                        ? Colors.greenAccent.withValues(alpha: 0.8)
+                        : Colors.white.withValues(alpha: 0.05),
                     width: _isDragging ? 1.5 : 1.0,
                   ),
                   boxShadow: _isDragging
                       ? [
                           BoxShadow(
-                            color: Colors.greenAccent.withOpacity(0.3),
+                            color: Colors.greenAccent.withValues(alpha: 0.3),
                             blurRadius: 10,
                             spreadRadius: 2,
                           ),
@@ -115,7 +125,7 @@ class _DraggableModuleState extends State<DraggableModule>
                       child: Text(
                         widget.title.toUpperCase(),
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.7),
+                          color: Colors.white.withValues(alpha: 0.7),
                           fontWeight: FontWeight.w600,
                           fontFamily: 'Courier',
                           fontSize: 10,
@@ -142,7 +152,7 @@ class _DraggableModuleState extends State<DraggableModule>
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.redAccent.withOpacity(0.6),
+                      color: Colors.redAccent.withValues(alpha: 0.6),
                       blurRadius: 4,
                     ),
                   ],

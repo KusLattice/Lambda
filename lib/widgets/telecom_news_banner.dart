@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:lambda_app/services/rss_news_service.dart';
-import 'package:lambda_app/services/weather_service.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:lambda_app/providers/theme_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -34,20 +32,16 @@ class TelecomNewsBanner extends ConsumerStatefulWidget {
 
 class _TelecomNewsBannerState extends ConsumerState<TelecomNewsBanner>
     with SingleTickerProviderStateMixin {
-  late PageController _pageController;
   late AnimationController _fadeCtrl;
   late Animation<double> _fadeAnim;
   Timer? _autoTimer;
   int _currentPage = 0;
   List<TelecomNewsItem> _news = [];
   StreamSubscription? _sub;
-  WeatherData? _weather;
-  final _weatherService = WeatherService();
 
   @override
   void initState() {
     super.initState();
-    _pageController = PageController(viewportFraction: 1.0);
     _fadeCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 400),
@@ -61,21 +55,6 @@ class _TelecomNewsBannerState extends ConsumerState<TelecomNewsBanner>
         _startAutoScroll();
       }
     });
-
-    _loadWeather();
-  }
-
-  Future<void> _loadWeather() async {
-    try {
-      final pos = await Geolocator.getCurrentPosition();
-      final w = await _weatherService.getWeather(pos.latitude, pos.longitude);
-      if (mounted && w != null) {
-        setState(() => _weather = w);
-      }
-    } catch (_) {
-      // Fallback a mock si no hay permisos
-      if (mounted) setState(() => _weather = _weatherService.getMockChile());
-    }
   }
 
   void _startAutoScroll() {
@@ -114,7 +93,7 @@ class _TelecomNewsBannerState extends ConsumerState<TelecomNewsBanner>
       return Container(
         height: 110,
         width: double.infinity,
-        color: Colors.black.withOpacity(0.3),
+        color: Colors.black.withValues(alpha: 0.3),
         child: Center(
           child: Text(
             'CARGANDO DATA STREAM...',
@@ -132,16 +111,16 @@ class _TelecomNewsBannerState extends ConsumerState<TelecomNewsBanner>
     return GestureDetector(
       onTap: () => _launchUrl(_news[_currentPage].url),
       child: Container(
-        height: 110,
+        height: 160,
         width: double.infinity,
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.3),
+          color: Colors.black.withValues(alpha: 0.3),
           border: Border(
-            bottom: BorderSide(color: accent.withOpacity(0.15)),
+            bottom: BorderSide(color: accent.withValues(alpha: 0.15)),
           ),
         ),
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 500),
+        child: FadeTransition(
+          opacity: _fadeAnim,
           child: _buildLinearContent(_news[_currentPage], theme, key: ValueKey(_currentPage)),
         ),
       ),
@@ -162,9 +141,9 @@ class _TelecomNewsBannerState extends ConsumerState<TelecomNewsBanner>
           ClipRRect(
             borderRadius: BorderRadius.circular(6),
             child: Container(
-              width: 90,
-              height: 90,
-              color: Colors.white.withOpacity(0.05),
+              width: 140,
+              height: 140,
+              color: Colors.white.withValues(alpha: 0.05),
               child: item.imageUrl != null
                   ? Image.network(
                       item.imageUrl!,
@@ -175,7 +154,7 @@ class _TelecomNewsBannerState extends ConsumerState<TelecomNewsBanner>
                       },
                       loadingBuilder: (context, child, loadingProgress) {
                         if (loadingProgress == null) return child;
-                        return Center(child: CircularProgressIndicator(strokeWidth: 2, color: accent.withOpacity(0.2)));
+                        return Center(child: CircularProgressIndicator(strokeWidth: 2, color: accent.withValues(alpha: 0.2)));
                       },
                     )
                   : _buildCategoryFallback(item.category),
@@ -191,13 +170,13 @@ class _TelecomNewsBannerState extends ConsumerState<TelecomNewsBanner>
                 // Título en 2 líneas
                 Text(
                   item.title,
-                  maxLines: 2,
+                  maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.9),
-                    fontSize: 14,
+                    color: Colors.white.withValues(alpha: 0.9),
+                    fontSize: 16,
                     fontFamily: 'Inter',
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.bold,
                     height: 1.2,
                     letterSpacing: 0.1,
                   ),
@@ -209,8 +188,8 @@ class _TelecomNewsBannerState extends ConsumerState<TelecomNewsBanner>
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: catColor.withOpacity(0.1),
-                        border: Border.all(color: catColor.withOpacity(0.3)),
+                        color: catColor.withValues(alpha: 0.1),
+                        border: Border.all(color: catColor.withValues(alpha: 0.3)),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(

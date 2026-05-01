@@ -61,11 +61,11 @@ class LambdaTheme {
         elevation: 0,
       ),
       cardColor: cardColor,
-      dividerColor: onSurface.withOpacity(0.1),
+      dividerColor: onSurface.withValues(alpha: 0.1),
       textTheme: TextTheme(
         bodyLarge: TextStyle(color: onSurface),
-        bodyMedium: TextStyle(color: onSurface.withOpacity(0.8)),
-        bodySmall: TextStyle(color: onSurface.withOpacity(0.6)),
+        bodyMedium: TextStyle(color: onSurface.withValues(alpha: 0.8)),
+        bodySmall: TextStyle(color: onSurface.withValues(alpha: 0.6)),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -77,7 +77,7 @@ class LambdaTheme {
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
-        hintStyle: TextStyle(color: onSurface.withOpacity(0.4)),
+        hintStyle: TextStyle(color: onSurface.withValues(alpha: 0.4)),
         labelStyle: TextStyle(color: accent),
         focusedBorder: UnderlineInputBorder(
           borderSide: BorderSide(color: accent),
@@ -87,7 +87,7 @@ class LambdaTheme {
         backgroundColor: accent,
         foregroundColor: background,
       ),
-      iconTheme: IconThemeData(color: onSurface.withOpacity(0.7)),
+      iconTheme: IconThemeData(color: onSurface.withValues(alpha: 0.7)),
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith(
           (s) => s.contains(WidgetState.selected) ? accent : Colors.grey,
@@ -95,8 +95,8 @@ class LambdaTheme {
         trackColor: WidgetStateProperty.resolveWith(
           (s) =>
               s.contains(WidgetState.selected)
-                  ? accent.withOpacity(0.4)
-                  : Colors.grey.withOpacity(0.3),
+                  ? accent.withValues(alpha: 0.4)
+                  : Colors.grey.withValues(alpha: 0.3),
         ),
       ),
       drawerTheme: DrawerThemeData(backgroundColor: background),

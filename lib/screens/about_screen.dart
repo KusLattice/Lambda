@@ -195,7 +195,7 @@ class _AboutPageState extends ConsumerState<AboutPage>
                   Shadow(color: Colors.white, blurRadius: glowValue * 0.1),
                   // Radiación verde de alta densidad (Quemado)
                   Shadow(
-                    color: Colors.greenAccent.withOpacity(1.0),
+                    color: Colors.greenAccent.withValues(alpha: 1.0),
                     blurRadius: glowValue * 1.5,
                   ),
                 ];
@@ -203,7 +203,7 @@ class _AboutPageState extends ConsumerState<AboutPage>
                 if (isGlitching) {
                   electricShadows.add(
                     Shadow(
-                      color: Colors.cyanAccent.withOpacity(0.9),
+                      color: Colors.cyanAccent.withValues(alpha: 0.9),
                       offset: Offset(
                         (random.nextDouble() - 0.5) * 20,
                         (random.nextDouble() - 0.5) * 10,
@@ -216,19 +216,19 @@ class _AboutPageState extends ConsumerState<AboutPage>
                 // Auras expansivas masivas (Inundación total de pantalla)
                 electricShadows.addAll([
                   Shadow(
-                    color: Colors.greenAccent.withOpacity(0.8),
+                    color: Colors.greenAccent.withValues(alpha: 0.8),
                     blurRadius: glowValue * 8,
                   ),
                   Shadow(
-                    color: Colors.cyanAccent.withOpacity(0.6),
+                    color: Colors.cyanAccent.withValues(alpha: 0.6),
                     blurRadius: glowValue * 20,
                   ),
                   Shadow(
-                    color: Colors.greenAccent.withOpacity(0.4),
+                    color: Colors.greenAccent.withValues(alpha: 0.4),
                     blurRadius: glowValue * 45,
                   ),
                   Shadow(
-                    color: Colors.cyanAccent.withOpacity(0.2),
+                    color: Colors.cyanAccent.withValues(alpha: 0.2),
                     blurRadius: glowValue * 90, // Proyección masiva
                   ),
                 ]);
@@ -290,7 +290,7 @@ class _AboutPageState extends ConsumerState<AboutPage>
                         letterSpacing: 10,
                         shadows: [
                           Shadow(
-                            color: Colors.greenAccent.withOpacity(0.4),
+                            color: Colors.greenAccent.withValues(alpha: 0.4),
                             blurRadius: glowValue / 3,
                           ),
                         ],
@@ -399,7 +399,7 @@ class _AboutPageState extends ConsumerState<AboutPage>
                       'Parte del ecosistema Lattice',
                       style: TextStyle(
                         fontSize: 9,
-                        color: Colors.white.withOpacity(0.3),
+                        color: Colors.white.withValues(alpha: 0.3),
                         fontWeight: FontWeight.w400,
                         letterSpacing: 0.1,
                       ),
@@ -409,7 +409,7 @@ class _AboutPageState extends ConsumerState<AboutPage>
                       'Derechos reservados - 2026',
                       style: TextStyle(
                         fontSize: 8,
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withValues(alpha: 0.2),
                         fontWeight: FontWeight.w300,
                         letterSpacing: 0.1,
                       ),

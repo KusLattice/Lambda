@@ -312,9 +312,9 @@ class _GlobalStatsScreenState extends ConsumerState<GlobalStatsScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey[900]?.withOpacity(0.8),
+        color: Colors.grey[900]?.withValues(alpha: 0.8),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.amber.withOpacity(0.3)),
+        border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -433,7 +433,7 @@ class _GlobalStatsScreenState extends ConsumerState<GlobalStatsScreen> {
             BarChartRodData(
               toY: val.toDouble(),
               gradient: LinearGradient(
-                colors: [Colors.cyanAccent, Colors.cyanAccent.withOpacity(0.3)],
+                colors: [Colors.cyanAccent, Colors.cyanAccent.withValues(alpha: 0.3)],
                 begin: Alignment.bottomCenter,
                 end: Alignment.topCenter,
               ),
@@ -448,7 +448,7 @@ class _GlobalStatsScreenState extends ConsumerState<GlobalStatsScreen> {
                             ? 0
                             : _peakHours.values.reduce((a, b) => a > b ? a : b))
                         .toDouble(),
-                color: Colors.white.withOpacity(0.05),
+                color: Colors.white.withValues(alpha: 0.05),
               ),
             ),
           ],
@@ -520,7 +520,7 @@ class _GlobalStatsScreenState extends ConsumerState<GlobalStatsScreen> {
       child: Text(
         title,
         style: TextStyle(
-          color: Colors.amber.withOpacity(0.8),
+          color: Colors.amber.withValues(alpha: 0.8),
           fontSize: 14,
           fontWeight: FontWeight.bold,
           letterSpacing: 1.2,
@@ -546,7 +546,7 @@ class _GlobalStatsScreenState extends ConsumerState<GlobalStatsScreen> {
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.grey[900]?.withOpacity(0.5),
+          color: Colors.grey[900]?.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(color: Colors.white12),
         ),

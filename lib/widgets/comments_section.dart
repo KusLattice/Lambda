@@ -206,7 +206,7 @@ class _CommentsSectionState extends ConsumerState<CommentsSection> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
+                color: Colors.white.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
@@ -265,7 +265,7 @@ class _CommentsSectionState extends ConsumerState<CommentsSection> {
                       hintText: 'Escribe un comentario...',
                       hintStyle: const TextStyle(color: Colors.white38),
                       filled: true,
-                      fillColor: Colors.white.withOpacity(0.05),
+                      fillColor: Colors.white.withValues(alpha: 0.05),
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 14,
                         vertical: 10,
@@ -278,7 +278,7 @@ class _CommentsSectionState extends ConsumerState<CommentsSection> {
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(20),
                         borderSide: BorderSide(
-                          color: widget.accentColor.withOpacity(0.6),
+                          color: widget.accentColor.withValues(alpha: 0.6),
                         ),
                       ),
                     ),
@@ -386,7 +386,6 @@ class _CommentTileState extends ConsumerState<_CommentTile>
     HapticFeedback.mediumImpact();
     final renderBox = context.findRenderObject() as RenderBox;
     final offset = renderBox.localToGlobal(Offset.zero);
-    final size = renderBox.size;
 
     _overlayEntry = OverlayEntry(
       builder: (_) => Stack(
@@ -416,11 +415,11 @@ class _CommentTileState extends ConsumerState<_CommentTile>
                     color: const Color(0xFF1E1E1E),
                     borderRadius: BorderRadius.circular(30),
                     border: Border.all(
-                      color: widget.accentColor.withOpacity(0.3),
+                      color: widget.accentColor.withValues(alpha: 0.3),
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.5),
+                        color: Colors.black.withValues(alpha: 0.5),
                         blurRadius: 12,
                         offset: const Offset(0, 4),
                       ),
@@ -452,7 +451,7 @@ class _CommentTileState extends ConsumerState<_CommentTile>
                           padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
                             color: hasReacted
-                                ? widget.accentColor.withOpacity(0.2)
+                                ? widget.accentColor.withValues(alpha: 0.2)
                                 : Colors.transparent,
                             shape: BoxShape.circle,
                           ),
@@ -522,7 +521,7 @@ class _CommentTileState extends ConsumerState<_CommentTile>
                       vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.05),
+                      color: Colors.white.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Column(
@@ -602,12 +601,12 @@ class _CommentTileState extends ConsumerState<_CommentTile>
                               ),
                               decoration: BoxDecoration(
                                 color: iMine
-                                    ? accentColor.withOpacity(0.2)
-                                    : Colors.white.withOpacity(0.06),
+                                    ? accentColor.withValues(alpha: 0.2)
+                                    : Colors.white.withValues(alpha: 0.06),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
                                   color: iMine
-                                      ? accentColor.withOpacity(0.5)
+                                      ? accentColor.withValues(alpha: 0.5)
                                       : Colors.white12,
                                   width: 0.8,
                                 ),
@@ -642,7 +641,7 @@ class _CommentTileState extends ConsumerState<_CommentTile>
                       child: Text(
                         'mantén presionado para reaccionar',
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.15),
+                          color: Colors.white.withValues(alpha: 0.15),
                           fontSize: 9,
                           fontStyle: FontStyle.italic,
                         ),

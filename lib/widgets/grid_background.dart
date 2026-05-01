@@ -8,7 +8,7 @@ class GridBackgroundPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     const cellSize = 32.0;
     final paint = Paint()
-      ..color = Colors.greenAccent.withOpacity(0.05)
+      ..color = Colors.greenAccent.withValues(alpha: 0.05)
       ..strokeWidth = 0.5
       ..style = PaintingStyle.stroke;
 
@@ -23,7 +23,7 @@ class GridBackgroundPainter extends CustomPainter {
 
     // Puntos en las intersecciones (sutil)
     final dotPaint = Paint()
-      ..color = Colors.greenAccent.withOpacity(0.12)
+      ..color = Colors.greenAccent.withValues(alpha: 0.12)
       ..style = PaintingStyle.fill;
 
     for (double x = 0; x <= size.width; x += cellSize) {

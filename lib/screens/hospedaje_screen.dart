@@ -557,10 +557,10 @@ class _HospedajeScreenState extends ConsumerState<HospedajeScreen> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.greenAccent.withOpacity(0.1),
+                        color: Colors.greenAccent.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: Colors.greenAccent.withOpacity(0.3),
+                          color: Colors.greenAccent.withValues(alpha: 0.3),
                         ),
                       ),
                       child: Row(

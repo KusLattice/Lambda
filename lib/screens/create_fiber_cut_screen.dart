@@ -288,11 +288,13 @@ class _CreateFiberCutScreenState extends ConsumerState<CreateFiberCutScreen> {
         backgroundColor: Colors.black,
         foregroundColor: Colors.redAccent,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+      body: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
             Text(
               widget.initialReport != null
                   ? 'EDITAR REPORTE'
@@ -316,9 +318,9 @@ class _CreateFiberCutScreenState extends ConsumerState<CreateFiberCutScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.redAccent.withOpacity(0.1),
+                color: Colors.redAccent.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.redAccent.withOpacity(0.1)),
+                border: Border.all(color: Colors.redAccent.withValues(alpha: 0.1)),
               ),
               child: Column(
                 children: [
@@ -346,7 +348,7 @@ class _CreateFiberCutScreenState extends ConsumerState<CreateFiberCutScreen> {
                           onEditingComplete: _updateAddressFromCoords,
                           readOnly: true,
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.7),
+                            color: Colors.white.withValues(alpha: 0.7),
                             fontSize: 12,
                           ),
                           decoration: const InputDecoration(
@@ -406,11 +408,11 @@ class _CreateFiberCutScreenState extends ConsumerState<CreateFiberCutScreen> {
                 labelText: 'REGIÓN',
                 labelStyle: const TextStyle(color: Colors.redAccent),
                 filled: true,
-                fillColor: Colors.white.withOpacity(0.05),
+                fillColor: Colors.white.withValues(alpha: 0.05),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(
-                    color: Colors.redAccent.withOpacity(0.1),
+                    color: Colors.redAccent.withValues(alpha: 0.1),
                   ),
                 ),
                 border: OutlineInputBorder(
@@ -435,11 +437,11 @@ class _CreateFiberCutScreenState extends ConsumerState<CreateFiberCutScreen> {
                   labelText: 'COMUNA',
                   labelStyle: const TextStyle(color: Colors.redAccent),
                   filled: true,
-                  fillColor: Colors.white.withOpacity(0.05),
+                  fillColor: Colors.white.withValues(alpha: 0.05),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(
-                      color: Colors.redAccent.withOpacity(0.1),
+                      color: Colors.redAccent.withValues(alpha: 0.1),
                     ),
                   ),
                   border: OutlineInputBorder(
@@ -462,17 +464,17 @@ class _CreateFiberCutScreenState extends ConsumerState<CreateFiberCutScreen> {
                 hintText: 'NOTAS ADICIONALES (Opcional)',
                 hintStyle: const TextStyle(color: Colors.white24),
                 filled: true,
-                fillColor: Colors.white.withOpacity(0.05),
+                fillColor: Colors.white.withValues(alpha: 0.05),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(
-                    color: Colors.redAccent.withOpacity(0.2),
+                    color: Colors.redAccent.withValues(alpha: 0.2),
                   ),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(
-                    color: Colors.redAccent.withOpacity(0.1),
+                    color: Colors.redAccent.withValues(alpha: 0.1),
                   ),
                 ),
               ),
@@ -503,8 +505,9 @@ class _CreateFiberCutScreenState extends ConsumerState<CreateFiberCutScreen> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   @override
   void dispose() {

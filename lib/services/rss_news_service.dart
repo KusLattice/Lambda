@@ -202,12 +202,37 @@ class RssNewsService {
     ),
   ];
 
+  /// Priority sort: 1. Chile, 2. Huawei/DWDM/Tecnica, 3. Vecinos, 4. Others. Secondary: Date
+  List<TelecomNewsItem> _sortNews(List<TelecomNewsItem> news) {
+    int getScore(TelecomNewsItem item) {
+      final t = item.title.toLowerCase();
+      final c = item.category.toLowerCase();
+      final s = item.source.toLowerCase();
+      
+      if (t.contains('chile') || c == 'chile') return 100;
+      if (t.contains('huawei') || t.contains('dwdm') || s.contains('huawei') || c == 'tecnica') return 90;
+      if (t.contains('argentina') || t.contains('peru') || t.contains('perú') || t.contains('bolivia') || t.contains('vecino')) return 80;
+      return 0;
+    }
+
+    final sorted = List<TelecomNewsItem>.from(news);
+    sorted.sort((a, b) {
+      final scoreA = getScore(a);
+      final scoreB = getScore(b);
+      if (scoreA != scoreB) {
+        return scoreB.compareTo(scoreA); // Higher score first
+      }
+      return b.publishedAt.compareTo(a.publishedAt); // Newer first
+    });
+    return sorted;
+  }
+
   /// Obtiene noticias: primero emite fallback instantáneo, luego conecta a Firestore.
   /// Admins pueden borrar ítems individuales.
   Stream<List<TelecomNewsItem>> newsStream() async* {
     debugPrint('DEBUG: newsStream() iniciado');
     // UX Instantánea: Emitimos datos base mientras conectamos
-    yield _fallbackNews;
+    yield _sortNews(_fallbackNews);
 
     try {
       final snapshots = FirebaseFirestore.instance
@@ -221,13 +246,13 @@ class RssNewsService {
           // Si no hay nada, intentamos poblar en segundo plano
           _seedDefaults();
           _tryFetchRss();
-          yield _fallbackNews;
+          yield _sortNews(_fallbackNews);
         } else {
           // Si hay datos, los procesamos
           final items = snap.docs
               .map((d) => TelecomNewsItem.fromMap(d.data(), d.id))
               .toList();
-          yield items;
+          yield _sortNews(items);
           
           // Verificamos si los datos están obsoletos (throttled internamente)
           _refreshIfStale();
@@ -235,7 +260,7 @@ class RssNewsService {
       }
     } catch (e) {
       debugPrint('Error en NewsStream: $e');
-      yield _fallbackNews;
+      yield _sortNews(_fallbackNews);
     }
   }
 
@@ -261,12 +286,10 @@ class RssNewsService {
       if (cacheSnap.exists) {
         final lastFetch =
             (cacheSnap.data()!['lastFetchAt'] as Timestamp?)?.toDate();
-        /* 
         if (lastFetch != null &&
             DateTime.now().difference(lastFetch).inHours < _cacheTtlHours) {
-          return; // Aún fresco
+          return; // Cache válido: no se hacen requests a los feeds.
         }
-        */
       }
 
       await _tryFetchRss();
@@ -279,7 +302,7 @@ class RssNewsService {
   }
 
   Future<void> _tryFetchRss() async {
-    debugPrint('DEBUG: Iniciando fetch de RSS para ${_feeds.length} fuentes...');
+    debugPrint('RssNewsService: iniciando fetch para ${_feeds.length} fuentes...');
     for (final feed in _feeds) {
       try {
         final headers = {

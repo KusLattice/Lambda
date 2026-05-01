@@ -18,7 +18,7 @@ class RecycleBinScreen extends ConsumerWidget {
         backgroundColor: Colors.black,
         appBar: AppBar(
           title: const Text('Papelera de Administrador'),
-          backgroundColor: Colors.red[900]?.withOpacity(0.5),
+          backgroundColor: Colors.red[900]?.withValues(alpha: 0.5),
           bottom: const TabBar(
             indicatorColor: Colors.redAccent,
             labelColor: Colors.redAccent,

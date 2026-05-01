@@ -147,8 +147,8 @@ class _FiberCutCard extends ConsumerWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.redAccent.withOpacity(0.05),
-        border: Border.all(color: Colors.redAccent.withOpacity(0.3)),
+        color: Colors.redAccent.withValues(alpha: 0.05),
+        border: Border.all(color: Colors.redAccent.withValues(alpha: 0.3)),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -289,7 +289,7 @@ class _FiberCutCard extends ConsumerWidget {
                     color: Colors.black45,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: Colors.redAccent.withOpacity(0.1),
+                      color: Colors.redAccent.withValues(alpha: 0.1),
                     ),
                   ),
                   child: Column(

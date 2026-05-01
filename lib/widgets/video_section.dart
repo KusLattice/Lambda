@@ -172,7 +172,7 @@ class _VideoSectionState extends State<VideoSection> {
               : OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(
-                      color: widget.accentColor.withOpacity(0.5),
+                      color: widget.accentColor.withValues(alpha: 0.5),
                     ),
                     foregroundColor: widget.accentColor,
                   ),

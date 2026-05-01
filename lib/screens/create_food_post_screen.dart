@@ -143,7 +143,13 @@ class _CreateFoodPostScreenState extends ConsumerState<CreateFoodPostScreen> {
           final detectedRegion = matchChileRegion(place.administrativeArea);
           if (detectedRegion != null) {
             _selectedRegion = detectedRegion;
-            _selectedComuna = null; // Resetear comuna al cambiar region automáticamente
+            final comunas = kChileRegions[detectedRegion] ?? [];
+            final matchComuna = comunas.firstWhere(
+                (c) =>
+                    c.toLowerCase() ==
+                    (place.subAdministrativeArea ?? '').toLowerCase(),
+                orElse: () => '');
+            _selectedComuna = matchComuna.isNotEmpty ? matchComuna : null;
           }
         } else {
           _locationCtrl.text = 'Sin dirección';

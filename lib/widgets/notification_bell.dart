@@ -180,10 +180,10 @@ class _NotificationOverlay extends StatelessWidget {
               decoration: BoxDecoration(
                 color: const Color(0xFF1A1A1A),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.greenAccent.withOpacity(0.15)),
+                border: Border.all(color: Colors.greenAccent.withValues(alpha: 0.15)),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.6),
+                    color: Colors.black.withValues(alpha: 0.6),
                     blurRadius: 20,
                     spreadRadius: 4,
                   ),
@@ -201,7 +201,7 @@ class _NotificationOverlay extends StatelessWidget {
                     decoration: BoxDecoration(
                       border: Border(
                         bottom: BorderSide(
-                          color: Colors.greenAccent.withOpacity(0.1),
+                          color: Colors.greenAccent.withValues(alpha: 0.1),
                         ),
                       ),
                     ),
@@ -248,7 +248,7 @@ class _NotificationOverlay extends StatelessWidget {
                         itemCount: notifications.length,
                         separatorBuilder: (_, _) => Divider(
                           height: 1,
-                          color: Colors.white.withOpacity(0.05),
+                          color: Colors.white.withValues(alpha: 0.05),
                         ),
                         itemBuilder: (context, index) {
                           final n = notifications[index];
@@ -288,7 +288,7 @@ class _NotificationTile extends StatelessWidget {
       child: Container(
         color: notification.isRead
             ? Colors.transparent
-            : Colors.greenAccent.withOpacity(0.03),
+            : Colors.greenAccent.withValues(alpha: 0.03),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -348,7 +348,7 @@ class _NotificationTile extends StatelessWidget {
                     style: TextStyle(
                       color: notification.isRead
                           ? Colors.white24
-                          : Colors.greenAccent.withOpacity(0.6),
+                          : Colors.greenAccent.withValues(alpha: 0.6),
                       fontSize: 10,
                       fontFamily: 'Courier',
                     ),

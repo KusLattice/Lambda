@@ -76,11 +76,39 @@ Future<void> main() async {
 /// Usamos ConsumerWidget para que LambdaApp observe directamente [authProvider].
 /// Esto evita depender del stream [authStateChanges()] de Firebase, que en Windows
 /// tiene un bug de threading que impide que los eventos lleguen a Flutter.
-class LambdaApp extends ConsumerWidget {
+class LambdaApp extends ConsumerStatefulWidget {
   const LambdaApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<LambdaApp> createState() => _LambdaAppState();
+}
+
+class _LambdaAppState extends ConsumerState<LambdaApp>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      ref.read(authProvider.notifier).updatePresence(isOnline: true);
+    } else if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      ref.read(authProvider.notifier).updatePresence(isOnline: false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final authAsync = ref.watch(authProvider);
     final lambdaTheme = ref.watch(themeProvider);
 

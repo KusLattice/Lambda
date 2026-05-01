@@ -279,7 +279,7 @@ class _ConversationTile extends ConsumerWidget {
 
   Widget _buildLoadingTile() {
     return Card(
-      color: Colors.grey[900]?.withOpacity(0.8),
+      color: Colors.grey[900]?.withValues(alpha: 0.8),
       margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: const ListTile(
@@ -297,7 +297,7 @@ class _ConversationTile extends ConsumerWidget {
 
   Widget _buildErrorTile(String userId, String error) {
     return Card(
-      color: Colors.grey[900]?.withOpacity(0.8),
+      color: Colors.grey[900]?.withValues(alpha: 0.8),
       margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
@@ -336,8 +336,8 @@ class _ConversationTile extends ConsumerWidget {
     return Card(
       clipBehavior: Clip.antiAlias, // Necesario para InkWell redondeado
       color: hasUnread
-          ? Colors.greenAccent.withOpacity(0.07)
-          : Colors.grey[900]?.withOpacity(0.8),
+          ? Colors.greenAccent.withValues(alpha: 0.07)
+          : Colors.grey[900]?.withValues(alpha: 0.8),
       margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
@@ -378,7 +378,7 @@ class _ConversationTile extends ConsumerWidget {
                 CircleAvatar(
                   radius: 24,
                   backgroundColor: isSystem
-                      ? Colors.amber.withOpacity(0.1)
+                      ? Colors.amber.withValues(alpha: 0.1)
                       : Colors.grey[850],
                   backgroundImage: fotoUrl != null
                       ? NetworkImage(fotoUrl)
@@ -616,7 +616,7 @@ class _MessageList extends ConsumerWidget {
                           : msg.body);
 
                 return Card(
-                  color: Colors.grey[900]?.withOpacity(0.85),
+                  color: Colors.grey[900]?.withValues(alpha: 0.85),
                   margin: const EdgeInsets.symmetric(
                     horizontal: 10,
                     vertical: 5,
@@ -625,9 +625,9 @@ class _MessageList extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(12),
                     side: BorderSide(
                       color: isSystem
-                          ? Colors.greenAccent.withOpacity(0.3)
+                          ? Colors.greenAccent.withValues(alpha: 0.3)
                           : (isChatMsg
-                                ? Colors.orangeAccent.withOpacity(0.3)
+                                ? Colors.orangeAccent.withValues(alpha: 0.3)
                                 : Colors.white12),
                     ),
                   ),
@@ -927,7 +927,7 @@ class _ContactsList extends ConsumerWidget {
                   final isBlocked = user.blockedUsers.contains(contact.id);
 
                   return Card(
-                    color: Colors.grey[900]?.withOpacity(0.8),
+                    color: Colors.grey[900]?.withValues(alpha: 0.8),
                     margin: const EdgeInsets.symmetric(
                       horizontal: 10,
                       vertical: 5,
@@ -1061,7 +1061,7 @@ class _ContactsList extends ConsumerWidget {
       builder: (context) => Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.greenAccent.withOpacity(0.3)),
+          border: Border.all(color: Colors.greenAccent.withValues(alpha: 0.3)),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(

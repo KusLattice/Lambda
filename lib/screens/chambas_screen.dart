@@ -339,8 +339,8 @@ class _ChambasScreenState extends ConsumerState<ChambasScreen> {
                 ),
                 decoration: BoxDecoration(
                   color: chamba.type == ChambaType.busca
-                      ? Colors.orangeAccent.withOpacity(0.2)
-                      : Colors.greenAccent.withOpacity(0.2),
+                      ? Colors.orangeAccent.withValues(alpha: 0.2)
+                      : Colors.greenAccent.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
@@ -482,14 +482,14 @@ class _ChambaCard extends StatelessWidget {
     final isBusqueda = chamba.type == ChambaType.busca;
 
     return Card(
-      color: Colors.black.withOpacity(0.7),
+      color: Colors.black.withValues(alpha: 0.7),
       margin: const EdgeInsets.only(bottom: 16),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
         side: BorderSide(
           color: isBusqueda
-              ? Colors.orangeAccent.withOpacity(0.5)
-              : Colors.greenAccent.withOpacity(0.5),
+              ? Colors.orangeAccent.withValues(alpha: 0.5)
+              : Colors.greenAccent.withValues(alpha: 0.5),
         ),
       ),
       child: Padding(
@@ -507,8 +507,8 @@ class _ChambaCard extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: isBusqueda
-                        ? Colors.orangeAccent.withOpacity(0.2)
-                        : Colors.greenAccent.withOpacity(0.2),
+                        ? Colors.orangeAccent.withValues(alpha: 0.2)
+                        : Colors.greenAccent.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(

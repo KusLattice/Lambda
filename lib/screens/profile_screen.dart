@@ -689,12 +689,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: Colors.greenAccent.withOpacity(0.5),
+                    color: Colors.greenAccent.withValues(alpha: 0.5),
                     width: 2,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.greenAccent.withOpacity(0.2),
+                      color: Colors.greenAccent.withValues(alpha: 0.2),
                       blurRadius: 15,
                       spreadRadius: 2,
                     ),
@@ -752,9 +752,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.amber.withOpacity(0.1),
+              color: Colors.amber.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.amber.withOpacity(0.3)),
+              border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
             ),
             child: Text(
               user.role.displayName,
@@ -803,7 +803,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               children: [
                 Icon(
                   icon,
-                  color: Colors.greenAccent.withOpacity(0.8),
+                  color: Colors.greenAccent.withValues(alpha: 0.8),
                   size: 18,
                 ),
               ],
@@ -848,7 +848,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             color: Colors.grey[850],
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
-                              color: Colors.greenAccent.withOpacity(0.2),
+                              color: Colors.greenAccent.withValues(alpha: 0.2),
                             ),
                           ),
                           textStyle: const TextStyle(
@@ -915,7 +915,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     color: Colors.grey[850],
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: Colors.greenAccent.withOpacity(0.2),
+                      color: Colors.greenAccent.withValues(alpha: 0.2),
                     ),
                   ),
                   textStyle: const TextStyle(color: Colors.white, fontSize: 12),
@@ -934,7 +934,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   value: value,
                   onChanged: onChanged,
                   activeThumbColor: Colors.greenAccent,
-                  activeTrackColor: Colors.greenAccent.withOpacity(0.3),
+                  activeTrackColor: Colors.greenAccent.withValues(alpha: 0.3),
                   inactiveThumbColor: Colors.grey,
                   inactiveTrackColor: Colors.white10,
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -1001,7 +1001,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   border: Border.all(
                     color: isSelected
                         ? theme.accent
-                        : Colors.white.withOpacity(0.1),
+                        : Colors.white.withValues(alpha: 0.1),
                     width: isSelected ? 1.5 : 0.5,
                   ),
                   gradient: theme.backgroundGradient != null
@@ -1014,7 +1014,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   boxShadow: isSelected
                       ? [
                           BoxShadow(
-                            color: theme.accent.withOpacity(0.3),
+                            color: theme.accent.withValues(alpha: 0.3),
                             blurRadius: 6,
                             spreadRadius: 1,
                           ),
@@ -1057,7 +1057,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.04),
+            color: Colors.white.withValues(alpha: 0.04),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Row(
@@ -1070,7 +1070,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: currentTheme.accent.withOpacity(0.5),
+                      color: currentTheme.accent.withValues(alpha: 0.5),
                       blurRadius: 6,
                     ),
                   ],

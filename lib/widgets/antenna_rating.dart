@@ -212,7 +212,7 @@ class _AntennaRatingState extends ConsumerState<AntennaRating>
                         boxShadow: isActive
                             ? [
                                 BoxShadow(
-                                  color: widget.accentColor.withOpacity(0.6),
+                                  color: widget.accentColor.withValues(alpha: 0.6),
                                   blurRadius: glowRadius,
                                   spreadRadius: glowRadius * 0.3,
                                 ),

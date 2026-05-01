@@ -49,10 +49,10 @@ class _SearchBannerState extends ConsumerState<SearchBanner> {
               decoration: BoxDecoration(
                 color: const Color(0xFF121212),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.white.withOpacity(0.05), width: 1),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.05), width: 1),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
+                    color: Colors.black.withValues(alpha: 0.2),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
@@ -69,13 +69,13 @@ class _SearchBannerState extends ConsumerState<SearchBanner> {
                 decoration: InputDecoration(
                   hintText: 'Buscar con IA...',
                   hintStyle: TextStyle(
-                    color: Colors.white.withOpacity(0.3),
+                    color: Colors.white.withValues(alpha: 0.3),
                     fontSize: 12,
                     fontFamily: 'Courier',
                   ),
                   prefixIcon: Icon(
                     Icons.search,
-                    color: Colors.white.withOpacity(0.3),
+                    color: Colors.white.withValues(alpha: 0.3),
                     size: 18,
                   ),
                   border: InputBorder.none,
@@ -94,30 +94,4 @@ class _SearchBannerState extends ConsumerState<SearchBanner> {
   }
 }
 
-class _GradientBorderPainter extends CustomPainter {
-  final double strokeWidth;
-  final double radius;
-  final Gradient gradient;
 
-  _GradientBorderPainter({
-    required this.strokeWidth,
-    required this.radius,
-    required this.gradient,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final Rect rect = Offset.zero & size;
-    final Paint paint = Paint()
-      ..strokeWidth = strokeWidth
-      ..style = PaintingStyle.stroke;
-
-    paint.shader = gradient.createShader(rect);
-
-    final RRect rrect = RRect.fromRectAndRadius(rect, Radius.circular(radius));
-    canvas.drawRRect(rrect, paint);
-  }
-
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) => false;
-}

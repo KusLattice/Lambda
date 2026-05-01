@@ -293,10 +293,10 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
               ? Container(
                   height: 40,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
+                    color: Colors.white.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: Colors.greenAccent.withOpacity(0.2),
+                      color: Colors.greenAccent.withValues(alpha: 0.2),
                     ),
                   ),
                   child: TextField(
@@ -685,7 +685,7 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
                               padding: const EdgeInsets.all(8),
                               margin: const EdgeInsets.only(top: 8),
                               decoration: BoxDecoration(
-                                color: Colors.red.withOpacity(0.1),
+                                color: Colors.red.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: const Row(
@@ -712,7 +712,7 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
                               margin: const EdgeInsets.only(top: 8),
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: Colors.grey.withOpacity(0.1),
+                                color: Colors.grey.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: const Row(
@@ -746,14 +746,14 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
                             horizontal: 10,
                             vertical: 5,
                           ),
-                          color: Colors.red.withOpacity(0.1),
+                          color: Colors.red.withValues(alpha: 0.1),
                           child: Center(
                             child: Transform.rotate(
                               angle: -0.2,
                               child: Text(
                                 'BANEADO',
                                 style: TextStyle(
-                                  color: Colors.red.withOpacity(0.8),
+                                  color: Colors.red.withValues(alpha: 0.8),
                                   fontSize: 32,
                                   fontWeight: FontWeight.w900,
                                   letterSpacing: 4,
@@ -772,14 +772,14 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
                             horizontal: 10,
                             vertical: 5,
                           ),
-                          color: Colors.black.withOpacity(0.3),
+                          color: Colors.black.withValues(alpha: 0.3),
                           child: Center(
                             child: Transform.rotate(
                               angle: -0.2,
                               child: Text(
                                 'PAPELERA',
                                 style: TextStyle(
-                                  color: Colors.grey.withOpacity(0.7),
+                                  color: Colors.grey.withValues(alpha: 0.7),
                                   fontSize: 28,
                                   fontWeight: FontWeight.w900,
                                   letterSpacing: 4,
@@ -860,7 +860,7 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
                 side: BorderSide(
                   color: isAttendedByOther
                       ? Colors.white10
-                      : typeColor.withOpacity(0.5),
+                      : typeColor.withValues(alpha: 0.5),
                   width: isAttendedByMe ? 2 : 1,
                 ),
                 borderRadius: BorderRadius.circular(8),
@@ -883,7 +883,7 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
                                   vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: typeColor.withOpacity(0.2),
+                                  color: typeColor.withValues(alpha: 0.2),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
@@ -1044,7 +1044,7 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
                     Positioned.fill(
                       child: Container(
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.6),
+                          color: Colors.black.withValues(alpha: 0.6),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Center(
@@ -1060,7 +1060,7 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
                               Text(
                                 'BLOQUEADO POR:',
                                 style: TextStyle(
-                                  color: Colors.amber.withOpacity(0.6),
+                                  color: Colors.amber.withValues(alpha: 0.6),
                                   fontSize: 10,
                                   letterSpacing: 2,
                                   fontFamily: 'Courier',
@@ -1316,7 +1316,7 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
             value: value,
             onChanged: onChanged,
             activeThumbColor: Colors.amber,
-            activeTrackColor: Colors.amber.withOpacity(0.5),
+            activeTrackColor: Colors.amber.withValues(alpha: 0.5),
             inactiveThumbColor: Colors.grey,
             inactiveTrackColor: Colors.grey[700],
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -1372,7 +1372,7 @@ class _PermissionsDialog extends ConsumerWidget {
                   authNotifier.toggleFeatureBlock(latestUser.id, feature);
                 },
                 activeThumbColor: Colors.greenAccent,
-                activeTrackColor: Colors.greenAccent.withOpacity(0.5),
+                activeTrackColor: Colors.greenAccent.withValues(alpha: 0.5),
               );
             }),
             const Divider(color: Colors.white24),
@@ -1390,7 +1390,7 @@ class _PermissionsDialog extends ConsumerWidget {
                 authNotifier.toggleMessageRestriction(latestUser.id, value);
               },
               activeThumbColor: Colors.orangeAccent,
-              activeTrackColor: Colors.orangeAccent.withOpacity(0.5),
+              activeTrackColor: Colors.orangeAccent.withValues(alpha: 0.5),
             ),
           ],
         ),

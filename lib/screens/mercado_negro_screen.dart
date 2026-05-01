@@ -218,7 +218,7 @@ class _MercadoNegroScreenState extends ConsumerState<MercadoNegroScreen> {
                           begin: Alignment.bottomCenter,
                           end: Alignment.topCenter,
                           colors: [
-                            Colors.black.withOpacity(0.8),
+                            Colors.black.withValues(alpha: 0.8),
                             Colors.transparent,
                           ],
                         ),
@@ -236,7 +236,7 @@ class _MercadoNegroScreenState extends ConsumerState<MercadoNegroScreen> {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.greenAccent.withOpacity(0.9),
+                          color: Colors.greenAccent.withValues(alpha: 0.9),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(

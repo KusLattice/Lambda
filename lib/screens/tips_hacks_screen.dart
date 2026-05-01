@@ -141,7 +141,7 @@ class _TipsHacksScreenState extends ConsumerState<TipsHacksScreen> {
             margin: const EdgeInsets.only(bottom: 12),
             shape: RoundedRectangleBorder(
               side: BorderSide(
-                color: Colors.greenAccent.withOpacity(0.5),
+                color: Colors.greenAccent.withValues(alpha: 0.5),
                 width: 1,
               ),
               borderRadius: BorderRadius.circular(8),
@@ -284,7 +284,7 @@ class _TipsHacksScreenState extends ConsumerState<TipsHacksScreen> {
                               color: Colors.black,
                               borderRadius: BorderRadius.circular(4),
                               border: Border.all(
-                                color: Colors.greenAccent.withOpacity(0.3),
+                                color: Colors.greenAccent.withValues(alpha: 0.3),
                               ),
                             ),
                             child: const Icon(
@@ -402,7 +402,7 @@ class _TipsHacksScreenState extends ConsumerState<TipsHacksScreen> {
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
-                              color: Colors.greenAccent.withOpacity(0.3),
+                              color: Colors.greenAccent.withValues(alpha: 0.3),
                             ),
                           ),
                           child: ClipRRect(
@@ -443,7 +443,7 @@ class _TipsHacksScreenState extends ConsumerState<TipsHacksScreen> {
                   color: Colors.grey[900],
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: Colors.greenAccent.withOpacity(0.3),
+                    color: Colors.greenAccent.withValues(alpha: 0.3),
                   ),
                 ),
                 child: Text(

@@ -212,7 +212,7 @@ class _LaNaveScreenState extends ConsumerState<LaNaveScreen>
       color: Colors.grey[900],
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(
-        side: BorderSide(color: Colors.greenAccent.withOpacity(0.5)),
+        side: BorderSide(color: Colors.greenAccent.withValues(alpha: 0.5)),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Padding(

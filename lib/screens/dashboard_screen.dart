@@ -18,8 +18,7 @@ import 'package:lambda_app/providers/notification_providers.dart';
 import 'package:lambda_app/config/modules_config.dart';
 import 'package:lambda_app/widgets/search_banner.dart';
 import 'package:lambda_app/services/ota_update_service.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sensors_plus/sensors_plus.dart';
+
 
 class MainDashboard extends ConsumerStatefulWidget {
   static const String routeName = '/dashboard';
@@ -33,6 +32,7 @@ class MainDashboard extends ConsumerStatefulWidget {
 class _MainDashboardState extends ConsumerState<MainDashboard>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   Timer? _presenceTimer;
+  bool _isEditMode = false;
 
   @override
   void initState() {
@@ -178,9 +178,21 @@ class _MainDashboardState extends ConsumerState<MainDashboard>
         user: user,
         onShowSecretDialog: _showSecretAccessDialog,
       ),
-      floatingActionButton: !showFab
-          ? null
-          : Padding(
+      floatingActionButton: _isEditMode
+          ? FloatingActionButton.extended(
+              onPressed: () {
+                setState(() {
+                  _isEditMode = false;
+                });
+              },
+              icon: const Icon(Icons.check),
+              label: const Text('Terminar'),
+              backgroundColor: Colors.greenAccent,
+              foregroundColor: Colors.black,
+            )
+          : !showFab
+              ? null
+              : Padding(
               padding: const EdgeInsets.only(bottom: 24.0), // Elevado para evitar bordes/gestos
               child: FloatingActionButton(
               mini: true,
@@ -195,7 +207,7 @@ class _MainDashboardState extends ConsumerState<MainDashboard>
                     decoration: BoxDecoration(
                       color: const Color(0xFF111111),
                       border: Border(
-                        top: BorderSide(color: currentTheme.accent.withOpacity(0.3), width: 1),
+                        top: BorderSide(color: currentTheme.accent.withValues(alpha: 0.3), width: 1),
                       ),
                       borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
                     ),
@@ -243,19 +255,19 @@ class _MainDashboardState extends ConsumerState<MainDashboard>
                                   decoration: BoxDecoration(
                                     gradient: sel ? LinearGradient(
                                       colors: [
-                                        t.accent.withOpacity(0.2),
-                                        t.secondaryAccent.withOpacity(0.1),
+                                        t.accent.withValues(alpha: 0.2),
+                                        t.secondaryAccent.withValues(alpha: 0.1),
                                       ],
                                     ) : null,
-                                    color: sel ? null : Colors.white.withOpacity(0.03),
+                                    color: sel ? null : Colors.white.withValues(alpha: 0.03),
                                     borderRadius: BorderRadius.circular(10),
                                     border: Border.all(
-                                      color: sel ? t.accent : Colors.white.withOpacity(0.05),
+                                      color: sel ? t.accent : Colors.white.withValues(alpha: 0.05),
                                       width: sel ? 1.2 : 0.5,
                                     ),
                                     boxShadow: sel ? [
                                       BoxShadow(
-                                        color: t.accent.withOpacity(0.1),
+                                        color: t.accent.withValues(alpha: 0.1),
                                         blurRadius: 8,
                                         spreadRadius: -2,
                                       )
@@ -329,14 +341,14 @@ class _MainDashboardState extends ConsumerState<MainDashboard>
                                 child: Container(
                                   decoration: BoxDecoration(
                                     color: currentTheme.backgroundGradient == null
-                                        ? currentTheme.background.withOpacity(0.7)
+                                        ? currentTheme.background.withValues(alpha: 0.7)
                                         : null,
                                     gradient: currentTheme.backgroundGradient != null
                                         ? LinearGradient(
                                             begin: Alignment.topLeft,
                                             end: Alignment.bottomRight,
                                             colors: currentTheme.backgroundGradient!
-                                                .map((c) => c.withOpacity(0.8))
+                                                .map((c) => c.withValues(alpha: 0.8))
                                                 .toList(),
                                           )
                                         : null,
@@ -372,7 +384,7 @@ class _MainDashboardState extends ConsumerState<MainDashboard>
                     final Widget child = (moduleConfig.routeName == null)
                         ? const CompassModule()
                         : InkWell(
-                          onTap: () {
+                          onTap: _isEditMode ? null : () {
                             if (moduleConfig.routeName == '/fiber-cut' &&
                                 user.role == UserRole.TecnicoInvitado) {
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -389,7 +401,7 @@ class _MainDashboardState extends ConsumerState<MainDashboard>
                               moduleConfig.routeName!,
                             );
                           },
-                          onLongPress: () {
+                          onLongPress: _isEditMode ? null : () {
                             showModalBottomSheet(
                               context: context,
                               backgroundColor: const Color(0xFF111111),
@@ -441,13 +453,25 @@ class _MainDashboardState extends ConsumerState<MainDashboard>
                                                 moduleConfig.iconColor,
                                             side: BorderSide(
                                               color: moduleConfig.iconColor
-                                                  .withOpacity(0.5),
+                                                  .withValues(alpha: 0.5),
                                             ),
                                           ),
                                         ),
                                         OutlinedButton.icon(
                                           onPressed: () {
                                             Navigator.pop(context);
+                                            setState(() {
+                                              _isEditMode = true;
+                                            });
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(
+                                                backgroundColor: Colors.blueAccent,
+                                                content: Text(
+                                                  'Modo edición activo. Mantén presionado un ícono para arrastrarlo.',
+                                                ),
+                                                duration: Duration(seconds: 3),
+                                              ),
+                                            );
                                           },
                                           icon: const Icon(
                                             Icons.drag_indicator,

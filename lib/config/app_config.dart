@@ -1,4 +1,6 @@
 // lib/config/app_config.dart
+import 'package:flutter/foundation.dart';
+
 
 /// Configuración global de la aplicación (API keys, feature flags, etc.).
 class AppConfig {
@@ -22,8 +24,27 @@ class AppConfig {
   static String get geminiApiKey =>
       const String.fromEnvironment('GEMINI_API_KEY', defaultValue: '');
 
-  /// Valida configuraciones mínimas al arranque. Lanza si falta algo crítico.
+  /// Valida configuraciones mínimas al arranque.
+  /// En lugar de lanzar una excepción, emite warnings no fatales para
+  /// que la app pueda seguir corriendo en debug sin --dart-define.
   static void validate() {
-    assert(mapsApiKey.isNotEmpty, 'MAPS_API_KEY no puede estar vacío');
+    if (mapsApiKey.isEmpty) {
+      debugPrint(
+        '[AppConfig] ⚠️ MAPS_API_KEY está vacío. '
+        'Usa --dart-define=MAPS_API_KEY=... para habilitar Maps y AQI.',
+      );
+    }
+    if (weatherApiKey.isEmpty) {
+      debugPrint(
+        '[AppConfig] ⚠️ WEATHER_API_KEY está vacío. '
+        'Usa --dart-define=WEATHER_API_KEY=... para habilitar WeatherService.',
+      );
+    }
+    if (geminiApiKey.isEmpty) {
+      debugPrint(
+        '[AppConfig] ⚠️ GEMINI_API_KEY está vacío. '
+        'Usa --dart-define=GEMINI_API_KEY=... para habilitar búsqueda IA.',
+      );
+    }
   }
 }

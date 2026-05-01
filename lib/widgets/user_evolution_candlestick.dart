@@ -102,7 +102,7 @@ class _UserEvolutionCandlestickState extends State<UserEvolutionCandlestick> {
             backDrawRodData: BackgroundBarChartRodData(
               show: true,
               toY: data.high + (data.high * 0.1),
-              color: Colors.white.withOpacity(0.02),
+              color: Colors.white.withValues(alpha: 0.02),
             ),
           ),
         ],

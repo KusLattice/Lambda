@@ -342,7 +342,7 @@ class _DialPainter extends CustomPainter {
       Offset(cx, cy),
       r,
       Paint()
-        ..color = Colors.greenAccent.withOpacity(0.4)
+        ..color = Colors.greenAccent.withValues(alpha: 0.4)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.2,
     );
@@ -358,7 +358,7 @@ class _DialPainter extends CustomPainter {
         Offset(cx + outer * sin(rad), cy - outer * cos(rad)),
         Paint()
           ..color = isCard
-              ? Colors.greenAccent.withOpacity(0.9)
+              ? Colors.greenAccent.withValues(alpha: 0.9)
               : Colors.white30
           ..strokeWidth = isCard ? 1.5 : 1.0,
       );
@@ -578,7 +578,7 @@ class _FullCompassSheetState extends State<_FullCompassSheet>
       decoration: BoxDecoration(
         color: const Color(0xFF080C10),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        border: Border.all(color: Colors.greenAccent.withOpacity(0.15)),
+        border: Border.all(color: Colors.greenAccent.withValues(alpha: 0.15)),
       ),
       child: Column(
         children: [
@@ -588,7 +588,7 @@ class _FullCompassSheetState extends State<_FullCompassSheet>
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: Colors.greenAccent.withOpacity(0.4),
+              color: Colors.greenAccent.withValues(alpha: 0.4),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -613,7 +613,7 @@ class _FullCompassSheetState extends State<_FullCompassSheet>
                 Text(
                   'λ TELECOM',
                   style: TextStyle(
-                    color: Colors.greenAccent.withOpacity(0.4),
+                    color: Colors.greenAccent.withValues(alpha: 0.4),
                     fontSize: 10,
                     letterSpacing: 2,
                     fontFamily: 'monospace',
@@ -641,7 +641,7 @@ class _FullCompassSheetState extends State<_FullCompassSheet>
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.greenAccent.withOpacity(0.15),
+                              color: Colors.greenAccent.withValues(alpha: 0.15),
                               blurRadius: _glowAnim.value,
                               spreadRadius: _glowAnim.value / 3,
                             ),
@@ -774,7 +774,7 @@ class _LargeDialPainter extends CustomPainter {
       Offset(cx, cy),
       r,
       Paint()
-        ..color = Colors.greenAccent.withOpacity(0.5)
+        ..color = Colors.greenAccent.withValues(alpha: 0.5)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.5,
     );
@@ -782,7 +782,7 @@ class _LargeDialPainter extends CustomPainter {
       Offset(cx, cy),
       r - 6,
       Paint()
-        ..color = Colors.greenAccent.withOpacity(0.15)
+        ..color = Colors.greenAccent.withValues(alpha: 0.15)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.0,
     );
@@ -813,7 +813,7 @@ class _LargeDialPainter extends CustomPainter {
         Offset(cx + inner * sin(rad), cy - inner * cos(rad)),
         Offset(cx + outer * sin(rad), cy - outer * cos(rad)),
         Paint()
-          ..color = Colors.greenAccent.withOpacity(opacity)
+          ..color = Colors.greenAccent.withValues(alpha: opacity)
           ..strokeWidth = strokeW,
       );
     }
@@ -860,7 +860,7 @@ class _LargeDialPainter extends CustomPainter {
 
     // Sombra de aguja norte
     final shadowPaint = Paint()
-      ..color = Colors.red.withOpacity(0.3)
+      ..color = Colors.red.withValues(alpha: 0.3)
       ..strokeWidth = 6
       ..strokeCap = StrokeCap.round
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
@@ -939,7 +939,7 @@ class _SectionHeader extends StatelessWidget {
         Text(
           text,
           style: TextStyle(
-            color: Colors.greenAccent.withOpacity(0.7),
+            color: Colors.greenAccent.withValues(alpha: 0.7),
             fontSize: 10,
             letterSpacing: 2,
             fontFamily: 'monospace',
@@ -949,7 +949,7 @@ class _SectionHeader extends StatelessWidget {
         Container(
           height: 0.5,
           width: 80,
-          color: Colors.greenAccent.withOpacity(0.2),
+          color: Colors.greenAccent.withValues(alpha: 0.2),
         ),
       ],
     );
@@ -991,7 +991,7 @@ class _DataGrid extends StatelessWidget {
               decoration: BoxDecoration(
                 color: const Color(0xFF0D1520),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.greenAccent.withOpacity(0.1)),
+                border: Border.all(color: Colors.greenAccent.withValues(alpha: 0.1)),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               child: Column(
@@ -1055,7 +1055,7 @@ class _CoordCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF0D1520),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.greenAccent.withOpacity(0.15)),
+        border: Border.all(color: Colors.greenAccent.withValues(alpha: 0.15)),
       ),
       child: Column(
         children: [
@@ -1077,7 +1077,7 @@ class _CoordCard extends StatelessWidget {
               Text(
                 'DD  ',
                 style: TextStyle(
-                  color: Colors.greenAccent.withOpacity(0.5),
+                  color: Colors.greenAccent.withValues(alpha: 0.5),
                   fontSize: 9,
                   fontFamily: 'monospace',
                 ),
@@ -1116,7 +1116,7 @@ class _CoordRow extends StatelessWidget {
         Text(
           '$label ',
           style: TextStyle(
-            color: Colors.greenAccent.withOpacity(0.6),
+            color: Colors.greenAccent.withValues(alpha: 0.6),
             fontSize: 10,
             fontWeight: FontWeight.bold,
             fontFamily: 'monospace',
@@ -1157,7 +1157,7 @@ class _AzimutBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF0D1520),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.greenAccent.withOpacity(0.1)),
+        border: Border.all(color: Colors.greenAccent.withValues(alpha: 0.1)),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(8),
@@ -1206,7 +1206,7 @@ class _AzimutBarPainter extends CustomPainter {
         Offset(x, (h + tickH) / 2),
         Paint()
           ..color = isCard
-              ? Colors.greenAccent.withOpacity(0.9)
+              ? Colors.greenAccent.withValues(alpha: 0.9)
               : Colors.white24
           ..strokeWidth = isCard ? 1.5 : 1.0,
       );
@@ -1302,8 +1302,8 @@ class _BubbleLevelWidgetState extends State<_BubbleLevelWidget> {
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: isLevel
-              ? Colors.greenAccent.withOpacity(0.4)
-              : Colors.greenAccent.withOpacity(0.1),
+              ? Colors.greenAccent.withValues(alpha: 0.4)
+              : Colors.greenAccent.withValues(alpha: 0.1),
         ),
       ),
       child: Column(
@@ -1313,7 +1313,7 @@ class _BubbleLevelWidgetState extends State<_BubbleLevelWidget> {
               Text(
                 'ROLL ',
                 style: TextStyle(
-                  color: Colors.greenAccent.withOpacity(0.5),
+                  color: Colors.greenAccent.withValues(alpha: 0.5),
                   fontSize: 8,
                   fontFamily: 'monospace',
                 ),
@@ -1393,7 +1393,7 @@ class _BubblePainter extends CustomPainter {
         Radius.circular(tubeR),
       ),
       Paint()
-        ..color = Colors.greenAccent.withOpacity(0.15)
+        ..color = Colors.greenAccent.withValues(alpha: 0.15)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1,
     );
@@ -1403,7 +1403,7 @@ class _BubblePainter extends CustomPainter {
       Offset(cx, cy - tubeR + 2),
       Offset(cx, cy + tubeR - 2),
       Paint()
-        ..color = Colors.greenAccent.withOpacity(0.3)
+        ..color = Colors.greenAccent.withValues(alpha: 0.3)
         ..strokeWidth = 0.5,
     );
 
@@ -1415,7 +1415,7 @@ class _BubblePainter extends CustomPainter {
     canvas.drawCircle(
       Offset(bubbleX, cy),
       tubeR - 2,
-      Paint()..color = bubbleColor.withOpacity(0.6),
+      Paint()..color = bubbleColor.withValues(alpha: 0.6),
     );
     canvas.drawCircle(
       Offset(bubbleX, cy),

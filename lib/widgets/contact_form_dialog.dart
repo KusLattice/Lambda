@@ -228,7 +228,7 @@ class _ContactFormDialogState extends ConsumerState<ContactFormDialog> {
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: TextStyle(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withValues(alpha: 0.2),
               fontSize: 13,
             ),
             filled: true,

@@ -258,7 +258,7 @@ class _CreateNavePostScreenState extends ConsumerState<CreateNavePostScreen> {
                         labelStyle: const TextStyle(color: Colors.greenAccent),
                         enabledBorder: OutlineInputBorder(
                           borderSide: BorderSide(
-                            color: Colors.greenAccent.withOpacity(0.5),
+                            color: Colors.greenAccent.withValues(alpha: 0.5),
                           ),
                         ),
                         focusedBorder: const OutlineInputBorder(
@@ -297,7 +297,7 @@ class _CreateNavePostScreenState extends ConsumerState<CreateNavePostScreen> {
                         labelStyle: const TextStyle(color: Colors.greenAccent),
                         enabledBorder: OutlineInputBorder(
                           borderSide: BorderSide(
-                            color: Colors.greenAccent.withOpacity(0.5),
+                            color: Colors.greenAccent.withValues(alpha: 0.5),
                           ),
                         ),
                         focusedBorder: const OutlineInputBorder(
@@ -417,7 +417,7 @@ class _CreateNavePostScreenState extends ConsumerState<CreateNavePostScreen> {
       labelStyle: const TextStyle(color: Colors.greenAccent),
       enabledBorder: OutlineInputBorder(
         borderSide: BorderSide(
-          color: Colors.greenAccent.withOpacity(0.5),
+          color: Colors.greenAccent.withValues(alpha: 0.5),
         ),
       ),
       focusedBorder: const OutlineInputBorder(

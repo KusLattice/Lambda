@@ -160,10 +160,10 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.greenAccent.withOpacity(0.1),
+                      color: Colors.greenAccent.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: Colors.greenAccent.withOpacity(0.5),
+                        color: Colors.greenAccent.withValues(alpha: 0.5),
                       ),
                     ),
                     child: Text(

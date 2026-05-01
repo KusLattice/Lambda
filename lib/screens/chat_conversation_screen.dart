@@ -306,7 +306,7 @@ class _ChatConversationScreenState
     final avatar = CircleAvatar(
       radius: 18,
       backgroundColor: isSystem
-          ? Colors.amber.withOpacity(0.1)
+          ? Colors.amber.withValues(alpha: 0.1)
           : Colors.grey[850],
       backgroundImage: widget.otherUserFotoUrl != null
           ? NetworkImage(widget.otherUserFotoUrl!)
@@ -340,7 +340,7 @@ class _ChatConversationScreenState
               decoration: canViewProfile
                   ? TextDecoration.underline
                   : TextDecoration.none,
-              decorationColor: Colors.greenAccent.withOpacity(0.6),
+              decorationColor: Colors.greenAccent.withValues(alpha: 0.6),
             ),
           ),
         ),
@@ -563,7 +563,7 @@ class _ChatConversationScreenState
                             hintText: 'Transmitir mensaje...',
                             hintStyle: const TextStyle(color: Colors.white38),
                             filled: true,
-                            fillColor: Colors.white.withOpacity(0.07),
+                            fillColor: Colors.white.withValues(alpha: 0.07),
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 16,
                               vertical: 10,
@@ -663,11 +663,11 @@ class _ChatBubble extends ConsumerWidget {
           ),
           decoration: BoxDecoration(
             color: isMe
-                ? Colors.greenAccent.withOpacity(0.15)
-                : Colors.white.withOpacity(0.08),
+                ? Colors.greenAccent.withValues(alpha: 0.15)
+                : Colors.white.withValues(alpha: 0.08),
             border: Border.all(
               color: isMe
-                  ? Colors.greenAccent.withOpacity(0.4)
+                  ? Colors.greenAccent.withValues(alpha: 0.4)
                   : Colors.white24,
               width: 1,
             ),

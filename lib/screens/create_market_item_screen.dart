@@ -7,8 +7,6 @@ import 'package:lambda_app/providers/market_provider.dart';
 import 'package:lambda_app/widgets/media_selector_field.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart' as native_geocoding;
-import 'package:lambda_app/services/geocoding_service.dart';
-import 'package:lambda_app/config/app_config.dart';
 import 'package:lambda_app/config/chile_regions.dart';
 
 class CreateMarketItemScreen extends ConsumerStatefulWidget {
@@ -30,8 +28,6 @@ class _CreateMarketItemScreenState
   MarketCategory _selectedCategory = MarketCategory.Herramientas;
   String? _selectedRegion;
   bool _isLocating = false;
-
-  final _geocoding = GeocodingService(apiKey: AppConfig.mapsApiKey);
 
   List<File> _selectedImages = [];
   File? _selectedVideo;
@@ -301,10 +297,10 @@ class _CreateMarketItemScreenState
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.orangeAccent.withOpacity(0.05),
+                        color: Colors.orangeAccent.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: Colors.orangeAccent.withOpacity(0.1),
+                          color: Colors.orangeAccent.withValues(alpha: 0.1),
                         ),
                       ),
                       child: Column(

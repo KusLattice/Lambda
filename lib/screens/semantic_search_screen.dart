@@ -86,14 +86,14 @@ class _SemanticSearchScreenState extends ConsumerState<SemanticSearchScreen>
                   // Barra de búsqueda minimalista
                   Container(
                     decoration: BoxDecoration(
-                      color: theme.surface.withOpacity(0.5),
+                      color: theme.surface.withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: theme.accent.withOpacity(0.3),
+                        color: theme.accent.withValues(alpha: 0.3),
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: theme.accent.withOpacity(0.1),
+                          color: theme.accent.withValues(alpha: 0.1),
                           blurRadius: 10,
                           spreadRadius: 1,
                         )
@@ -113,7 +113,7 @@ class _SemanticSearchScreenState extends ConsumerState<SemanticSearchScreen>
                         decoration: InputDecoration(
                           hintText: 'ESCRIBE AQUÍ...',
                           hintStyle: TextStyle(
-                            color: theme.onSurface.withOpacity(0.4),
+                            color: theme.onSurface.withValues(alpha: 0.4),
                             fontSize: 14,
                           ),
                           prefixIcon: Icon(
@@ -255,10 +255,10 @@ class _SemanticResultCard extends ConsumerWidget {
         decoration: BoxDecoration(
           color: theme.surface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: theme.accent.withOpacity(0.1)),
+          border: Border.all(color: theme.accent.withValues(alpha: 0.1)),
           boxShadow: [
             BoxShadow(
-              color: theme.accent.withOpacity(0.05),
+              color: theme.accent.withValues(alpha: 0.05),
               blurRadius: 5,
               offset: const Offset(0, 2),
             )
@@ -303,7 +303,7 @@ class _SemanticResultCard extends ConsumerWidget {
 
   Widget _buildSourceBadge(String source, Color accent) {
     String label = source.toUpperCase();
-    Color color = accent.withOpacity(0.8);
+    Color color = accent.withValues(alpha: 0.8);
     IconData icon = Icons.info_outline;
 
     switch (source) {
@@ -331,9 +331,9 @@ class _SemanticResultCard extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: color.withOpacity(0.3), width: 0.5),
+        border: Border.all(color: color.withValues(alpha: 0.3), width: 0.5),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

@@ -166,10 +166,10 @@ class _MediaSelectorFieldState extends State<MediaSelectorField> {
                   width: 80,
                   height: 80,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
+                    color: Colors.white.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: widget.accentColor.withOpacity(0.3),
+                      color: widget.accentColor.withValues(alpha: 0.3),
                     ),
                   ),
                   child: Icon(Icons.add_a_photo, color: widget.accentColor),
@@ -183,10 +183,10 @@ class _MediaSelectorFieldState extends State<MediaSelectorField> {
                   width: 80,
                   height: 80,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
+                    color: Colors.white.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: widget.accentColor.withOpacity(0.3),
+                      color: widget.accentColor.withValues(alpha: 0.3),
                     ),
                   ),
                   child: Icon(Icons.video_call, color: widget.accentColor),

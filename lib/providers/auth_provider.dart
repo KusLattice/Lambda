@@ -513,13 +513,15 @@ class AuthStateNotifier extends AutoDisposeAsyncNotifier<User?> {
 
   // --- Métodos de Gestión (Admin Panel & Autenticación) ---
 
-  Future<void> updatePresence() async {
+  Future<void> updatePresence({bool isOnline = true}) async {
     final user = state.valueOrNull;
     if (user == null) return;
     try {
       await _firestore.collection(_usersCollection).doc(user.id).update({
         'lastActiveAt': FieldValue.serverTimestamp(),
+        'isOnline': isOnline,
       });
+      state = AsyncValue.data(user.copyWith(isOnline: isOnline));
     } catch (e) {
       debugPrint('Error actualizando presencia: $e');
     }

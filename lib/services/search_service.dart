@@ -92,11 +92,15 @@ class SearchService {
       final categoriesList =
           'hospedaje, picás, mercado, chambas, secret_vault, random${isAdmin ? ", mensajes" : ""}';
       final prompt = '''
-Analiza esta consulta: "$query"
-1. Categorías relevantes (elige de esta lista): $categoriesList.
-2. Palabras clave normalizadas (ej: "clama" -> "calama", "pega" -> "trabajo").
+Analiza esta consulta de usuario en una app comunitaria (telecomunicaciones, picadas chilenas, empleos, herramientas): "$query"
+1. Identifica las categorías relevantes de esta lista: $categoriesList.
+2. Genera una lista de palabras clave NORMALIZADAS, incluyendo la palabra original, sinónimos chilenos, jerga técnica y raíces.
+Ejemplos:
+- "pega" -> ["trabajo", "pega", "empleo", "chamba", "contrato"]
+- "fibra" -> ["fibra", "fo", "optica", "dwdm", "corte", "falla"]
+- "comida" -> ["comida", "picá", "almuerzo", "restaurante", "comer"]
 
-Responde estrictamente en formato JSON:
+Responde ESTRICTAMENTE en formato JSON:
 {"categories": ["cat1", "cat2"], "keywords": ["word1", "word2"]}
 ''';
       final response = await _model.generateContent([Content.text(prompt)]);
@@ -120,6 +124,15 @@ Responde estrictamente en formato JSON:
     }
   }
 
+  String _removeDiacritics(String str) {
+    var withDia = 'ÀÁÂÃÄÅàáâãäåÒÓÔÕÖØòóôõöøÈÉÊËèéêëÇçÌÍÎÏìíîïÙÚÛÜùúûüÿÑñ';
+    var withoutDia = 'AAAAAAaaaaaaOOOOOOooooooEEEEeeeeCcIIIIiiiiUUUUuuuuyNn';
+    for (int i = 0; i < withDia.length; i++) {
+      str = str.replaceAll(withDia[i], withoutDia[i]);
+    }
+    return str;
+  }
+
   Future<List<SemanticResult>> _searchCollection(
     String collectionPath,
     String source,
@@ -133,12 +146,12 @@ Responde estrictamente en formato JSON:
       for (var doc in snap.docs) {
         final data = doc.data();
         final rawTitle = data['title'] ?? data['nombre'] ?? data['authorName'] ?? '';
-        final title = rawTitle.toString().toLowerCase();
+        final title = _removeDiacritics(rawTitle.toString().toLowerCase());
         
-        final contentText = data.values.join(' ').toLowerCase();
+        final contentText = _removeDiacritics(data.values.join(' ').toLowerCase());
 
         double score = 0.0;
-        final q = originalQuery.toLowerCase();
+        final q = _removeDiacritics(originalQuery.toLowerCase());
 
         // 1. Alta relevancia si la consulta está en el título (exacta o parcial)
         if (title.isNotEmpty && title == q) {
@@ -156,9 +169,10 @@ Responde estrictamente en formato JSON:
         if (keywords.isNotEmpty) {
            int keywordMatches = 0;
            for (var kw in keywords) {
-             if (contentText.contains(kw.toLowerCase())) {
+             final kwLower = _removeDiacritics(kw.toLowerCase());
+             if (contentText.contains(kwLower)) {
                keywordMatches++;
-               if (title.contains(kw.toLowerCase())) {
+               if (title.contains(kwLower)) {
                  score += 0.8; // Más peso si está en el título
                } else {
                  score += 0.4;
@@ -200,7 +214,7 @@ Responde estrictamente en formato JSON:
     List<String> keywords,
   ) async {
     try {
-      final queryLower = query.toLowerCase();
+      final queryLower = _removeDiacritics(query.toLowerCase());
       // Limitamos a los últimos 1000 mensajes por performance
       final snap =
           await _firestore
@@ -212,8 +226,11 @@ Responde estrictamente en formato JSON:
       final results = <SemanticResult>[];
       for (var doc in snap.docs) {
         final data = doc.data();
-        final body = (data['body'] as String?)?.toLowerCase() ?? '';
-        final subject = (data['subject'] as String?)?.toLowerCase() ?? '';
+        final rawBody = (data['body'] as String?)?.toLowerCase() ?? '';
+        final rawSubject = (data['subject'] as String?)?.toLowerCase() ?? '';
+        
+        final body = _removeDiacritics(rawBody);
+        final subject = _removeDiacritics(rawSubject);
         final senderId = data['senderId'] ?? 'unknown';
 
         double score = 0.0;
@@ -224,7 +241,7 @@ Responde estrictamente en formato JSON:
         if (body.contains(queryLower)) score += 1.0;
 
         for (var kw in keywords) {
-          var kwLower = kw.toLowerCase();
+          var kwLower = _removeDiacritics(kw.toLowerCase());
           if (subject.contains(kwLower)) score += 0.8;
           if (body.contains(kwLower)) score += 0.4;
         }
@@ -234,7 +251,7 @@ Responde estrictamente en formato JSON:
             SemanticResult(
               id: doc.id,
               title: 'Mensaje de $senderId',
-              content: subject.isNotEmpty ? '[RE: $subject] $body' : body,
+              content: rawSubject.isNotEmpty ? '[RE: $rawSubject] $rawBody' : rawBody,
               source: 'mensajes',
               score: score,
             ),

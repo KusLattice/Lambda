@@ -163,6 +163,29 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
         debugPrint('Error loading icon $name: $e');
       }
     }
+
+    final cyberIcons = {
+      'cyber_bug': Icons.bug_report,
+      'cyber_terminal': Icons.terminal,
+      'cyber_rocket': Icons.rocket_launch,
+      'cyber_radar': Icons.radar,
+      'cyber_security': Icons.security,
+      'cyber_shield': Icons.shield,
+      'cyber_code': Icons.code,
+      'cyber_wifi': Icons.wifi_tethering,
+    };
+
+    for (final entry in cyberIcons.entries) {
+      try {
+        _customIcons[entry.key] = await _createIconFromMaterialIcon(
+          entry.value, 
+          Colors.cyanAccent,
+        );
+      } catch (e) {
+        debugPrint('Error loading cyber icon ${entry.key}: $e');
+      }
+    }
+
     if (mounted) {
       setState(() {
         _rebuildMarkers();
@@ -249,6 +272,53 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
     return BitmapDescriptor.bytes(bytes.buffer.asUint8List());
   }
 
+  Future<BitmapDescriptor> _createIconFromMaterialIcon(IconData iconData, Color color) async {
+    final pictureRecorder = ui.PictureRecorder();
+    final canvas = Canvas(pictureRecorder);
+    final textPainter = TextPainter(textDirection: TextDirection.ltr);
+
+    const double size = 60;
+    const Offset center = Offset(size / 2, size / 2);
+
+    // Fondo negro
+    final bgPaint = Paint()..color = const Color(0xFF151515);
+    canvas.drawCircle(center, 24, bgPaint);
+
+    // Borde neón
+    final borderPaint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+    canvas.drawCircle(center, 24, borderPaint);
+
+    // Glow suave
+    final glowPaint = Paint()
+      ..color = color.withValues(alpha: 0.3)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
+    canvas.drawCircle(center, 26, glowPaint);
+
+    // Icono
+    textPainter.text = TextSpan(
+      text: String.fromCharCode(iconData.codePoint),
+      style: TextStyle(
+        fontSize: 30.0,
+        fontFamily: iconData.fontFamily,
+        package: iconData.fontPackage,
+        color: color,
+      ),
+    );
+    textPainter.layout();
+    textPainter.paint(
+      canvas,
+      Offset(center.dx - textPainter.width / 2, center.dy - textPainter.height / 2),
+    );
+
+    final img = await pictureRecorder.endRecording().toImage(size.toInt(), size.toInt());
+    final data = await img.toByteData(format: ui.ImageByteFormat.png);
+    if (data == null) return BitmapDescriptor.defaultMarker;
+    return BitmapDescriptor.bytes(data.buffer.asUint8List());
+  }
+
   // ---------------------------------------------------------------------------
   // FIRESTORE — LISTENERS DE USUARIOS Y CORTES 📡
   // ---------------------------------------------------------------------------
@@ -257,6 +327,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
     _usersSubscription = FirebaseFirestore.instance
         .collection('users')
         .where('isVisibleOnMap', isEqualTo: true)
+        .where('isOnline', isEqualTo: true)
         .snapshots()
         .listen((snapshot) {
           if (!mounted) return;
@@ -742,6 +813,14 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                 _buildIconOption(context, user, '6'),
                 _buildIconOption(context, user, '7'),
                 _buildIconOption(context, user, '8'),
+                _buildIconOption(context, user, 'cyber_bug', fallbackIcon: Icons.bug_report, color: Colors.cyanAccent),
+                _buildIconOption(context, user, 'cyber_terminal', fallbackIcon: Icons.terminal, color: Colors.cyanAccent),
+                _buildIconOption(context, user, 'cyber_rocket', fallbackIcon: Icons.rocket_launch, color: Colors.cyanAccent),
+                _buildIconOption(context, user, 'cyber_radar', fallbackIcon: Icons.radar, color: Colors.cyanAccent),
+                _buildIconOption(context, user, 'cyber_security', fallbackIcon: Icons.security, color: Colors.cyanAccent),
+                _buildIconOption(context, user, 'cyber_shield', fallbackIcon: Icons.shield, color: Colors.cyanAccent),
+                _buildIconOption(context, user, 'cyber_code', fallbackIcon: Icons.code, color: Colors.cyanAccent),
+                _buildIconOption(context, user, 'cyber_wifi', fallbackIcon: Icons.wifi_tethering, color: Colors.cyanAccent),
               ],
             ],
           ),
@@ -755,9 +834,10 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
     User user,
     String iconKey, {
     IconData? fallbackIcon,
+    Color? color,
   }) {
     final isSelected = user.representativeIcon == iconKey;
-    final isAsset = iconKey != 'default';
+    final isAsset = !iconKey.startsWith('cyber_') && iconKey != 'default';
 
     return GestureDetector(
       onTap: () async {
@@ -787,9 +867,9 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                 width: 40,
                 height: 40,
                 errorBuilder: (context, error, stackTrace) =>
-                    Icon(Icons.help_outline, color: Colors.white24, size: 30),
+                    const Icon(Icons.help_outline, color: Colors.white24, size: 30),
               )
-            : Icon(fallbackIcon ?? Icons.person, color: Colors.white, size: 30),
+            : Icon(fallbackIcon ?? Icons.person, color: color ?? Colors.white, size: 30),
       ),
     );
   }
