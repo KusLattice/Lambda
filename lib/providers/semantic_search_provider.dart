@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lambda_app/models/user_model.dart';
 import 'package:lambda_app/providers/auth_provider.dart';
 import 'package:lambda_app/services/search_service.dart';
+import 'package:lambda_app/models/lat_lng.dart' as local_coords;
 
 /// Define la estructura del resultado de búsqueda semántica.
 class SemanticResult {
@@ -10,6 +11,8 @@ class SemanticResult {
   final String title;
   final String source; // 'hospedaje', 'picás', 'mercado', 'secret_vault', etc.
   final double score;
+  final double? distance; // Distance in km from user
+  final local_coords.LatLng? coordinates; // To show on map if relevant
 
   SemanticResult({
     required this.id,
@@ -17,6 +20,8 @@ class SemanticResult {
     required this.title,
     required this.source,
     required this.score,
+    this.distance,
+    this.coordinates,
   });
 }
 
@@ -43,6 +48,7 @@ class SemanticSearchNotifier
       final allResults = await _searchService.performOmniSearch(
         query,
         isAdmin: user.role == UserRole.SuperAdmin || user.role == UserRole.Admin,
+        userLocation: user.lastKnownPosition,
       );
 
       // Protocolo de Seguridad Táctico: Filtrado por Rol y Permisos

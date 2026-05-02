@@ -6,6 +6,8 @@ import 'package:intl/intl.dart';
 import 'package:lambda_app/models/message_model.dart';
 import 'package:lambda_app/models/user_model.dart';
 import 'package:lambda_app/providers/auth_provider.dart';
+import 'package:lambda_app/providers/messaging_provider.dart';
+
 import 'package:lambda_app/screens/public_profile_screen.dart';
 import 'package:lambda_app/widgets/grid_background.dart';
 import 'package:lambda_app/widgets/video_player_widget.dart';
@@ -115,7 +117,7 @@ class _ChatConversationScreenState
 
         // Usamos el chatId canónico basado en estos dos participantes
         final chatId = Message.buildChatId(localId, widget.otherUserId);
-        ref.read(authProvider.notifier).markChatMessagesAsRead(chatId);
+        ref.read(messagingProvider).markChatMessagesAsRead(chatId);
       }
     });
   }
@@ -154,7 +156,7 @@ class _ChatConversationScreenState
           isAdmin &&
           widget.otherUserId != 'system_admin';
 
-      await ref.read(authProvider.notifier).sendChatMessage(
+      await ref.read(messagingProvider).sendChatMessage(
             receiverId: widget.otherUserId,
             body: body,
             senderIdOverride: useSystemIdentity ? 'system_admin' : null,
@@ -193,7 +195,7 @@ class _ChatConversationScreenState
           isAdmin &&
           widget.otherUserId != 'system_admin';
 
-      await ref.read(authProvider.notifier).sendChatMessage(
+      await ref.read(messagingProvider).sendChatMessage(
             receiverId: widget.otherUserId,
             body: '',
             images: [File(picked.path)],
@@ -233,7 +235,7 @@ class _ChatConversationScreenState
           isAdmin &&
           widget.otherUserId != 'system_admin';
 
-      await ref.read(authProvider.notifier).sendChatMessage(
+      await ref.read(messagingProvider).sendChatMessage(
             receiverId: widget.otherUserId,
             body: '',
             videoFiles: [File(picked.path)],
@@ -410,7 +412,7 @@ class _ChatConversationScreenState
               Expanded(
                 child: StreamBuilder<List<Message>>(
                   stream: ref
-                      .read(authProvider.notifier)
+                      .read(messagingProvider)
                       .getChatMessagesStream(chatId),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
@@ -827,7 +829,7 @@ class _ChatBubble extends ConsumerWidget {
                 Navigator.pop(context);
                 try {
                   await ref
-                      .read(authProvider.notifier)
+                      .read(messagingProvider)
                       .deleteChatMessage(message.id);
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(

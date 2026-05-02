@@ -14,7 +14,7 @@ class AppConfig {
 
   /// Clave por defecto (desarrollo/local). En producción usar --dart-define.
   /// MUST be passed via --dart-define=MAPS_API_KEY=... Nunca comitear API keys.
-  static const String defaultMapsApiKey = '';
+  static const String defaultMapsApiKey = 'AIzaSyDqxltfJNA6I_sqFiTpmRHn4ApiC2hh6Z8';
 
   /// API key para Weather Service.
   static String get weatherApiKey =>
@@ -22,7 +22,7 @@ class AppConfig {
 
   /// API key para Gemini Service.
   static String get geminiApiKey =>
-      const String.fromEnvironment('GEMINI_API_KEY', defaultValue: '');
+      const String.fromEnvironment('GEMINI_API_KEY', defaultValue: defaultMapsApiKey);
 
   /// Valida configuraciones mínimas al arranque.
   /// En lugar de lanzar una excepción, emite warnings no fatales para

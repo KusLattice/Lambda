@@ -57,6 +57,7 @@ class AuthStateNotifier extends AutoDisposeAsyncNotifier<User?> {
   Future<User?> _buildUser(
     firebase.User firebaseUser, {
     bool isNewUser = false,
+    bool countVisit = false,
   }) async {
     debugPrint(
       '>>> SIMPLIFIED _buildUser started for ${firebaseUser.uid} (isNewUser: $isNewUser)',
@@ -121,8 +122,9 @@ class AuthStateNotifier extends AutoDisposeAsyncNotifier<User?> {
 
       debugPrint('_buildUser finished successfully for ${user.id}');
 
-      // Solo incrementamos visitas si NO es un re-build interno rápido (opcional, pero simple por ahora)
-      _incrementVisits(user.id);
+      if (countVisit) {
+        _incrementVisits(user.id);
+      }
       return user;
     } catch (e) {
       debugPrint('Error in _buildUser: $e');
@@ -182,7 +184,7 @@ class AuthStateNotifier extends AutoDisposeAsyncNotifier<User?> {
         password: password,
       );
       // Cargamos y seteamos el estado directamente, sin esperar al stream.
-      final user = await _buildUser(cred.user!);
+      final user = await _buildUser(cred.user!, countVisit: true);
       state = AsyncValue.data(user);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -196,7 +198,7 @@ class AuthStateNotifier extends AutoDisposeAsyncNotifier<User?> {
         email: email,
         password: password,
       );
-      final user = await _buildUser(cred.user!, isNewUser: true);
+      final user = await _buildUser(cred.user!, isNewUser: true, countVisit: true);
       state = AsyncValue.data(user);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -230,7 +232,7 @@ class AuthStateNotifier extends AutoDisposeAsyncNotifier<User?> {
           );
       final cred = await _auth.signInWithCredential(credential);
       final isNewUser = cred.additionalUserInfo?.isNewUser ?? false;
-      final user = await _buildUser(cred.user!, isNewUser: isNewUser);
+      final user = await _buildUser(cred.user!, isNewUser: isNewUser, countVisit: true);
       state = AsyncValue.data(user);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -270,7 +272,7 @@ class AuthStateNotifier extends AutoDisposeAsyncNotifier<User?> {
       );
       final cred = await _auth.signInWithCredential(credential);
       final isNewUser = cred.additionalUserInfo?.isNewUser ?? false;
-      final user = await _buildUser(cred.user!, isNewUser: isNewUser);
+      final user = await _buildUser(cred.user!, isNewUser: isNewUser, countVisit: true);
       state = AsyncValue.data(user);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -778,184 +780,102 @@ class AuthStateNotifier extends AutoDisposeAsyncNotifier<User?> {
     }
   }
 
-  Future<void> addContact(String contactId) async {
-    final user = state.valueOrNull;
-    if (user == null) return;
-    if (!user.contactIds.contains(contactId)) {
-      await _firestore.collection(_usersCollection).doc(user.id).update({
-        'contactIds': FieldValue.arrayUnion([contactId]),
-      });
-      state = AsyncValue.data(
-        user.copyWith(contactIds: [...user.contactIds, contactId]),
-      );
-    }
-  }
-
-  Future<void> removeContact(String contactId) async {
-    final user = state.valueOrNull;
-    if (user == null) return;
-    if (user.contactIds.contains(contactId)) {
-      await _firestore.collection(_usersCollection).doc(user.id).update({
-        'contactIds': FieldValue.arrayRemove([contactId]),
-      });
-      final newContacts = List<String>.from(user.contactIds)..remove(contactId);
-      state = AsyncValue.data(user.copyWith(contactIds: newContacts));
-    }
-  }
-
-  Future<void> blockUser(String userIdToBlock) async {
-    final user = state.valueOrNull;
-    if (user == null) return;
-
-    final blocked = List<String>.from(user.blockedUsers);
-    if (!blocked.contains(userIdToBlock)) {
-      blocked.add(userIdToBlock);
-      await _firestore.collection(_usersCollection).doc(user.id).update({
-        'blockedUsers': blocked,
-      });
-      state = AsyncValue.data(user.copyWith(blockedUsers: blocked));
-    }
-  }
-
-  Future<void> unblockUser(String userIdToUnblock) async {
-    final user = state.valueOrNull;
-    if (user == null) return;
-
-    final blocked = List<String>.from(user.blockedUsers);
-    if (blocked.contains(userIdToUnblock)) {
-      blocked.remove(userIdToUnblock);
-      await _firestore.collection(_usersCollection).doc(user.id).update({
-        'blockedUsers': blocked,
-      });
-      state = AsyncValue.data(user.copyWith(blockedUsers: blocked));
-    }
-  }
-
   Future<void> toggleMessageRestriction(String userId, bool restricted) async {
     await _firestore.collection(_usersCollection).doc(userId).update({
       'isMessageRestricted': restricted,
     });
   }
 
-  Future<void> moveMessageToTrash(String messageId) async {
-    final user = state.valueOrNull;
-    if (user == null) return;
+  // Métodos de Mensajería (Mail) extraídos a MessagingService en lib/providers/messaging_provider.dart
 
-    // Usamos tanto la global para Mail como la privada para Chat para seguridad
-    await _firestore.collection('messages').doc(messageId).update({
-      'labels': FieldValue.arrayUnion(['trash', 'trash_${user.id}']),
-    });
-  }
-
-  Future<void> restoreMessageFromTrash(String messageId) async {
-    final user = state.valueOrNull;
-    if (user == null) return;
-
-    await _firestore.collection('messages').doc(messageId).update({
-      'labels': FieldValue.arrayRemove(['trash', 'trash_${user.id}']),
-    });
-  }
-
-  Stream<List<Message>> getMessagesStream(String label) {
-    final user = state.valueOrNull;
-    if (user == null) return Stream.value([]);
-
-    // Filtramos mensajes donde el usuario es remitente (sent) o destinatario (inbox/trash)
-    // El usuario ha creado los índices necesarios en la consola de Firebase.
-    Query query = _firestore.collection('messages');
-
-    // Para la papelera, usamos la etiqueta privada única del usuario.
-    // Esto evita errores de índice y garantiza privacidad total.
-    final String labelToQuery = label == 'trash' ? 'trash_${user.id}' : label;
-
-    // Filtramos por ID en Firestore por seguridad (privacidad),
-    // pero ordenamos en Dart para evitar pedir índices compuestos.
-    if (label == 'sent') {
-      query = query.where('senderId', isEqualTo: user.id);
-    } else if (label != 'trash') {
-      query = query.where('receiverId', isEqualTo: user.id);
-    }
-
-    return query
-        .where('labels', arrayContains: labelToQuery)
-        .snapshots()
-        .handleError((error) {
-          debugPrint(
-            'ERROR EN STREAM DE MENSAJES (Probable falta de índice): $error',
-          );
-          throw error;
-        })
-        .map((snapshot) {
-          return snapshot.docs
-              .map(
-                (doc) =>
-                    Message.fromMap(doc.data() as Map<String, dynamic>, doc.id),
-              )
-              .where((msg) {
-                // Si el mensaje tiene dueño, debe ser el usuario actual
-                if (msg.ownerId != null && msg.ownerId != user.id) return false;
-
-                // Si estamos en una carpeta activa (no trash), ocultar si está en la papelera
-                if (label != 'trash') {
-                  if (msg.labels.contains('trash')) return false;
-                  if (msg.labels.contains('trash_${user.id}')) return false;
-                }
-
-                return true;
-              })
-              .toList()
-            ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
-        });
-  }
-
-  /// Stream para buscar usuarios específicos por sus IDs (usado en lista de contactos)
-  Stream<List<User>> getContactsDataStream() {
-    final user = state.valueOrNull;
-    if (user == null || user.contactIds.isEmpty) return Stream.value([]);
-
-    // Firestore limita whereIn a 10 items por consulta generalmente,
-    // pero contactIds suele ser pequeña. Si crece, habrá que paginar.
-    return _firestore
-        .collection(_usersCollection)
-        .where(FieldPath.documentId, whereIn: user.contactIds.take(10).toList())
-        .snapshots()
-        .map(
-          (snap) =>
-              snap.docs.map((doc) => User.fromMap(doc.data(), doc.id)).toList(),
-        );
-  }
-
-  /// Busca un usuario por su Apodo o ID para añadirlo
   Future<User?> findUserToContact(String query) async {
-    final sanitizedQuery = query.toLowerCase().trim();
-    if (sanitizedQuery.isEmpty) return null;
+    if (query.trim().isEmpty) return null;
+    
+    // 1. Por ID exacto
+    final doc = await _firestore.collection(_usersCollection).doc(query.trim()).get();
+    if (doc.exists) return User.fromMap(doc.data()!, doc.id);
 
-    // 1. Buscar por ID exacto
-    final docById = await _firestore
+    // 2. Por Apodo exacto
+    final apodoSnap = await _firestore
         .collection(_usersCollection)
-        .doc(query)
+        .where('apodo', isEqualTo: query.trim())
+        .limit(1)
         .get();
-    if (docById.exists) {
-      return User.fromMap(docById.data() as Map<String, dynamic>, docById.id);
+    if (apodoSnap.docs.isNotEmpty) {
+      return User.fromMap(apodoSnap.docs.first.data(), apodoSnap.docs.first.id);
     }
 
-    // 2. Buscar por apodo
-    final nicknameDoc = await _firestore
-        .collection('nicknames')
-        .doc(sanitizedQuery)
+    // 3. Por Nombre exacto
+    final nombreSnap = await _firestore
+        .collection(_usersCollection)
+        .where('nombre', isEqualTo: query.trim())
+        .limit(1)
         .get();
-    if (nicknameDoc.exists) {
-      final email = nicknameDoc.data()?['email'];
-      final userSnap = await _firestore
-          .collection(_usersCollection)
-          .where('correo', isEqualTo: email)
-          .get();
-      if (userSnap.docs.isNotEmpty) {
-        return User.fromMap(userSnap.docs.first.data(), userSnap.docs.first.id);
-      }
+    if (nombreSnap.docs.isNotEmpty) {
+      return User.fromMap(nombreSnap.docs.first.data(), nombreSnap.docs.first.id);
     }
+    
     return null;
   }
+
+  Future<void> addContact(String contactId) async {
+    final user = state.valueOrNull;
+    if (user == null) return;
+    if (user.id == contactId) return;
+
+    await _firestore.collection(_usersCollection).doc(user.id).update({
+      'contactIds': FieldValue.arrayUnion([contactId]),
+    });
+    
+    // Actualización optimista del estado local
+    if (!user.contactIds.contains(contactId)) {
+      state = AsyncValue.data(user.copyWith(
+        contactIds: [...user.contactIds, contactId],
+      ));
+    }
+  }
+
+  Future<void> removeContact(String contactId) async {
+    final user = state.valueOrNull;
+    if (user == null) return;
+
+    await _firestore.collection(_usersCollection).doc(user.id).update({
+      'contactIds': FieldValue.arrayRemove([contactId]),
+    });
+
+    // Actualización optimista
+    state = AsyncValue.data(user.copyWith(
+      contactIds: user.contactIds.where((id) => id != contactId).toList(),
+    ));
+  }
+
+  Future<void> blockUser(String targetId) async {
+    final user = state.valueOrNull;
+    if (user == null) return;
+
+    await _firestore.collection(_usersCollection).doc(user.id).update({
+      'blockedUsers': FieldValue.arrayUnion([targetId]),
+    });
+
+    state = AsyncValue.data(user.copyWith(
+      blockedUsers: [...user.blockedUsers, targetId],
+    ));
+  }
+
+  Future<void> unblockUser(String targetId) async {
+    final user = state.valueOrNull;
+    if (user == null) return;
+
+    await _firestore.collection(_usersCollection).doc(user.id).update({
+      'blockedUsers': FieldValue.arrayRemove([targetId]),
+    });
+
+    state = AsyncValue.data(user.copyWith(
+      blockedUsers: user.blockedUsers.where((id) => id != targetId).toList(),
+    ));
+  }
+
+
 
   // ---------------------------------------------------------------------------
   // INCREMENTO DE VISITAS (Radiactivo 🧪)
@@ -1079,457 +999,10 @@ class AuthStateNotifier extends AutoDisposeAsyncNotifier<User?> {
   // CHAT DE MENSAJERÍA 💬
   // ---------------------------------------------------------------------------
 
-  /// Envía un mensaje de chat (1 sola copia en Firestore con chatId).
-  /// Compatible con las reglas Firestore existentes (colección `messages`).
-  Future<void> sendChatMessage({
-    required String receiverId,
-    required String body,
-    List<File> images = const [],
-    List<File> videoFiles = const [],
-    String? senderIdOverride, // Nuevo: permite actuar como system_admin
-  }) async {
-    final user = state.valueOrNull;
-    if (user == null) throw Exception('No autenticado.');
-    if (body.trim().isEmpty && images.isEmpty && videoFiles.isEmpty) return;
+  // Métodos de Chat extraídos a MessagingService en lib/providers/messaging_provider.dart
 
-    final effectiveSenderId = senderIdOverride ?? user.id;
+  // Métodos de Chat y Gestión de Papelera extraídos a MessagingService en lib/providers/messaging_provider.dart
 
-    final isAdmin =
-        user.role == UserRole.Admin || user.role == UserRole.SuperAdmin;
-    if (!isAdmin &&
-        !user.contactIds.contains(receiverId) &&
-        senderIdOverride != 'system_admin') {
-      throw Exception(
-        'Solo puedes chatear con colegas de tu Red Galáctica. ¡Añádelo primero!',
-      );
-    }
-
-    final List<String> imageUrls = [];
-    if (images.isNotEmpty) {
-      for (var i = 0; i < images.length; i++) {
-        final storageRef = FirebaseStorage.instance
-            .ref()
-            .child('messages')
-            .child(
-              '${effectiveSenderId}_img_${DateTime.now().millisecondsSinceEpoch}_$i.jpg',
-            );
-        await storageRef.putFile(images[i]);
-        imageUrls.add(await storageRef.getDownloadURL());
-      }
-    }
-
-    final List<String> videoUrls = [];
-    if (videoFiles.isNotEmpty) {
-      for (var i = 0; i < videoFiles.length; i++) {
-        final storageRef = FirebaseStorage.instance
-            .ref()
-            .child('messages')
-            .child(
-              '${effectiveSenderId}_vid_${DateTime.now().millisecondsSinceEpoch}_$i.mp4',
-            );
-        await storageRef.putFile(videoFiles[i]);
-        videoUrls.add(await storageRef.getDownloadURL());
-      }
-    }
-
-    final chatId = Message.buildChatId(effectiveSenderId, receiverId);
-    final message = Message(
-      id: '',
-      senderId: effectiveSenderId,
-      receiverId: receiverId,
-      subject: '',
-      body: body.trim(),
-      imageUrls: imageUrls,
-      videoUrls: videoUrls,
-      timestamp: DateTime.now(),
-      labels: const [],
-      chatId: chatId,
-    );
-
-    await _firestore.collection('messages').add(message.toMap());
-
-    final senderName = (user.apodo?.isNotEmpty == true)
-        ? user.apodo!
-        : user.nombre;
-    NotificationService.notifyNewMail(
-      targetUserId: receiverId,
-      sourceUserId: user.id,
-      sourceUserName: senderName,
-      subject: body.trim().length > 50
-          ? '${body.trim().substring(0, 50)}…'
-          : body.trim(),
-    );
-
-    if (!user.contactIds.contains(receiverId)) {
-      await _firestore.collection(_usersCollection).doc(user.id).update({
-        'contactIds': FieldValue.arrayUnion([receiverId]),
-      });
-      state = AsyncValue.data(
-        user.copyWith(contactIds: [...user.contactIds, receiverId]),
-      );
-    }
-  }
-
-  /// Stream de conversaciones activas (último mensaje por chatId).
-  Stream<List<Message>> getChatConversationsStream() {
-    final user = state.valueOrNull;
-    if (user == null) return Stream.value([]);
-
-    final isAdmin =
-        user.role == UserRole.Admin || user.role == UserRole.SuperAdmin;
-
-    final asSenderQuery = _firestore
-        .collection('messages')
-        .where('senderId', isEqualTo: user.id);
-
-    final asReceiverQuery = _firestore
-        .collection('messages')
-        .where('receiverId', isEqualTo: user.id);
-
-    // Si es admin, también escucha a system_admin
-    final List<Stream<QuerySnapshot>> streams = [
-      asSenderQuery.snapshots(),
-      asReceiverQuery.snapshots(),
-    ];
-
-    if (isAdmin) {
-      streams.add(
-        _firestore
-            .collection('messages')
-            .where('senderId', isEqualTo: 'system_admin')
-            .snapshots(),
-      );
-      streams.add(
-        _firestore
-            .collection('messages')
-            .where('receiverId', isEqualTo: 'system_admin')
-            .snapshots(),
-      );
-    }
-
-    // Usamos un stream combinado reactivo directo de Firestore en lugar de periodic polling.
-    // Esto es mucho más eficiente y responde al instante.
-    final combinedStream = StreamGroup.merge([
-      asSenderQuery.snapshots(),
-      asReceiverQuery.snapshots(),
-      if (isAdmin) ...[
-        _firestore
-            .collection('messages')
-            .where('senderId', isEqualTo: 'system_admin')
-            .snapshots(),
-        _firestore
-            .collection('messages')
-            .where('receiverId', isEqualTo: 'system_admin')
-            .snapshots(),
-      ],
-    ]);
-
-    return combinedStream
-        .map((_) {
-          // Re-consultar todos los documentos para asegurar coherencia total en la combinación
-          // (StreamGroup.merge emite cada vez que uno de los hijos cambia).
-          // Nota: En una app de producción esto se optimizaría con caché local.
-          return []; // Placeholder temporal para la estructura asyncExpand debajo
-        })
-        .asyncExpand((_) async* {
-          final List<QuerySnapshot> snapshots = [];
-          for (final s in streams) {
-            snapshots.add(await s.first);
-          }
-
-          final allDocs = snapshots.expand((s) => s.docs).toList();
-          final allMessages = allDocs
-              .map(
-                (doc) =>
-                    Message.fromMap(doc.data() as Map<String, dynamic>, doc.id),
-              )
-              .toList();
-
-          final Map<String, Message> latestByChatId = {};
-          for (final msg in allMessages) {
-            if (msg.chatId.isEmpty) continue;
-
-            // Aislamiento por dueño:
-            // 1. Si no tiene dueño, pasa (es chat normal).
-            // 2. Si el dueño soy YO, pasa.
-            // 3. ESPECIAL: Si involucra a system_admin, PASA para todos los Admins (Red compartida).
-            final bool isSystemInvolved =
-                msg.senderId == 'system_admin' ||
-                msg.receiverId == 'system_admin';
-            final bool canSeeSharedAdmin = isAdmin && isSystemInvolved;
-
-            if (msg.ownerId != null &&
-                msg.ownerId != user.id &&
-                !canSeeSharedAdmin) {
-              continue;
-            }
-
-            // Ignorar mensajes en papelera PRIVADA del usuario
-            if (msg.labels.contains('trash_${user.id}')) continue;
-            if (msg.labels.contains('deleted_${user.id}')) continue;
-            if (msg.labels.contains('trash')) continue;
-
-            final existing = latestByChatId[msg.chatId];
-            if (existing == null || msg.timestamp.isAfter(existing.timestamp)) {
-              latestByChatId[msg.chatId] = msg;
-            }
-          }
-
-          final conversations = latestByChatId.values.toList()
-            ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
-          yield conversations;
-        })
-        .distinct((prev, next) {
-          if (prev.length != next.length) return false;
-          for (int i = 0; i < prev.length; i++) {
-            if (prev[i].id != next[i].id ||
-                prev[i].timestamp != next[i].timestamp) {
-              return false;
-            }
-          }
-          return true;
-        });
-  }
-
-  /// Stream del historial de mensajes de una conversación.
-  /// Excluye mensajes que han sido movidos a la Papelera.
-  Stream<List<Message>> getChatMessagesStream(String chatId) {
-    final user = state.valueOrNull;
-    if (user == null) return Stream.value([]);
-
-    final isAdmin =
-        user.role == UserRole.Admin || user.role == UserRole.SuperAdmin;
-
-    // Quitamos 'orderBy' de la query de Firestore para evitar errores de índices ausentes.
-    // Ordenamos en memoria para mayor robustez durante el desarrollo.
-    return _firestore
-        .collection('messages')
-        .snapshots()
-        .handleError((e) {
-          debugPrint('getChatMessagesStream error: $e');
-        })
-        .map((snap) {
-          final messages = snap.docs
-              .map((doc) {
-                return Message.fromMap(doc.data(), doc.id);
-              })
-              .where((msg) {
-                // Filtrar por el chatId solicitado (reconstruido en el cliente si es necesario)
-                if (msg.chatId != chatId) return false;
-
-                // Aislamiento por dueño:
-                // 1. Si no tiene dueño, pasa.
-                // 2. Si el dueño soy YO, pasa.
-                // 3. ESPECIAL: Si involucra a system_admin, PASA para todos los Admins (Red compartida).
-                final bool isSystemInvolved =
-                    msg.senderId == 'system_admin' ||
-                    msg.receiverId == 'system_admin';
-                final bool canSeeSharedAdmin = isAdmin && isSystemInvolved;
-
-                if (msg.ownerId != null &&
-                    msg.ownerId != user.id &&
-                    !canSeeSharedAdmin) {
-                  return false;
-                }
-
-                // Filtrar mensajes borrados
-                if (msg.labels.contains('trash')) return false;
-                if (msg.labels.contains('trash_${user.id}')) return false;
-                if (msg.labels.contains('deleted_${user.id}')) return false;
-
-                return true;
-              })
-              .toList();
-
-          // Ordenar cronológicamente en memoria
-          messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-          return messages;
-        });
-  }
-
-  /// Marca como leídos todos mis mensajes no leídos en un chat.
-  Future<void> markChatMessagesAsRead(String chatId) async {
-    final user = state.valueOrNull;
-    if (user == null) return;
-
-    final isAdmin =
-        user.role == UserRole.Admin || user.role == UserRole.SuperAdmin;
-
-    try {
-      // Un admin puede marcar mensajes enviados a 'system_admin' como leídos.
-      final receiverIds = [user.id];
-      if (isAdmin) receiverIds.add('system_admin');
-
-      final snap = await _firestore
-          .collection('messages')
-          .where('receiverId', whereIn: receiverIds)
-          .where('isRead', isEqualTo: false)
-          .get();
-
-      if (snap.docs.isEmpty) return;
-      final batch = _firestore.batch();
-      int updatedCount = 0;
-      for (final doc in snap.docs) {
-        final msgData = doc.data();
-        final msgChatId = msgData['chatId'] as String? ?? '';
-
-        // Si el chatId coincide directamente en Firestore, o si está vacío pero el Message.fromMap lo asimilaría a este chat
-        bool matches = false;
-        if (msgChatId == chatId) {
-          matches = true;
-        } else if (msgChatId.isEmpty) {
-          final senderId = msgData['senderId'] as String? ?? '';
-          final receiverId = msgData['receiverId'] as String? ?? '';
-          if (Message.buildChatId(senderId, receiverId) == chatId) {
-            matches = true;
-          }
-        }
-
-        if (matches) {
-          batch.update(doc.reference, {'isRead': true});
-          updatedCount++;
-        }
-      }
-
-      if (updatedCount > 0) {
-        await batch.commit();
-      }
-    } catch (e) {
-      debugPrint('markChatMessagesAsRead error: $e');
-    }
-  }
-
-  /// Mueve un mensaje de chat a la papelera PRIVADA del usuario.
-  Future<void> deleteChatMessage(String messageId) async {
-    final user = state.valueOrNull;
-    if (user == null) return;
-
-    await _firestore.collection('messages').doc(messageId).update({
-      'labels': FieldValue.arrayUnion(['trash_${user.id}']),
-    });
-  }
-
-  /// Mueve TODOS los mensajes de un chatId a la papelera (eliminar conversación).
-  Future<void> deleteChatConversation(String chatId) async {
-    final user = state.valueOrNull;
-    if (user == null) return;
-
-    // Buscamos TODOS los mensajes. Filtramos por chatId en el cliente para ser robustos ante mensajes sin campo explícito.
-    final snap = await _firestore.collection('messages').get();
-
-    final batch = _firestore.batch();
-    int count = 0;
-    for (final doc in snap.docs) {
-      final msg = Message.fromMap(doc.data(), doc.id);
-      if (msg.chatId == chatId) {
-        batch.update(doc.reference, {
-          'labels': FieldValue.arrayUnion(['trash_${user.id}']),
-        });
-        count++;
-      }
-    }
-
-    if (count > 0) {
-      await batch.commit();
-    }
-  }
-
-  /// Elimina definitivamente un mensaje.
-  /// Para correos tradicionales, borra el documento.
-  /// Para chats, solo lo oculta visualmente; lo borra de la BD solo si la otra persona también lo borró.
-  Future<void> permanentlyDeleteMessage(String messageId) async {
-    final user = state.valueOrNull;
-    if (user == null) return;
-
-    final doc = await _firestore.collection('messages').doc(messageId).get();
-    if (!doc.exists) return;
-
-    final data = doc.data()!;
-    // Si es un correo tradicional (ownerId presente) lo borramos de inmediato.
-    if (data['ownerId'] != null) {
-      await doc.reference.delete();
-      return;
-    }
-
-    final labels = List<String>.from(data['labels'] ?? []);
-    final otherUserId = data['senderId'] == user.id
-        ? data['receiverId']
-        : data['senderId'];
-    final isDeletedByOther = labels.contains('deleted_$otherUserId');
-
-    if (isDeletedByOther) {
-      await doc.reference.delete();
-    } else {
-      labels.remove('trash');
-      labels.remove('trash_${user.id}');
-      if (!labels.contains('deleted_${user.id}')) {
-        labels.add('deleted_${user.id}');
-      }
-      await doc.reference.update({'labels': labels});
-    }
-  }
-
-  /// Restaura una conversación completa de la papelera (Chat).
-  Future<void> restoreChatConversation(String chatId) async {
-    final user = state.valueOrNull;
-    if (user == null) return;
-
-    final snap = await _firestore
-        .collection('messages')
-        .where('chatId', isEqualTo: chatId)
-        .get();
-
-    if (snap.docs.isEmpty) return;
-
-    final batch = _firestore.batch();
-    for (final doc in snap.docs) {
-      final labels = List<String>.from(doc.data()['labels'] ?? []);
-      if (labels.contains('trash_${user.id}')) {
-        batch.update(doc.reference, {
-          'labels': FieldValue.arrayRemove(['trash', 'trash_${user.id}']),
-        });
-      }
-    }
-    await batch.commit();
-  }
-
-  /// Elimina definitivamente todos los mensajes de un chat que estaban en papelera para este usuario.
-  Future<void> permanentlyDeleteChatConversation(String chatId) async {
-    final user = state.valueOrNull;
-    if (user == null) return;
-
-    final snap = await _firestore
-        .collection('messages')
-        .where('chatId', isEqualTo: chatId)
-        .get();
-
-    if (snap.docs.isEmpty) return;
-
-    final batch = _firestore.batch();
-    for (final doc in snap.docs) {
-      final data = doc.data();
-
-      final labels = List<String>.from(data['labels'] ?? []);
-      final otherUserId = data['senderId'] == user.id
-          ? data['receiverId']
-          : data['senderId'];
-      final isDeletedByOther = labels.contains('deleted_$otherUserId');
-
-      if (labels.contains('trash_${user.id}')) {
-        if (isDeletedByOther) {
-          batch.delete(doc.reference);
-        } else {
-          labels.remove('trash');
-          labels.remove('trash_${user.id}');
-          if (!labels.contains('deleted_${user.id}')) {
-            labels.add('deleted_${user.id}');
-          }
-          batch.update(doc.reference, {'labels': labels});
-        }
-      }
-    }
-    await batch.commit();
-  }
 
   /// Envía un mensaje interno a todos los Admins solicitando revisión del perfil.
   Future<void> sendVerificationRequest() async {

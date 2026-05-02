@@ -35,6 +35,7 @@ import 'package:lambda_app/screens/chat_conversation_screen.dart';
 import 'package:lambda_app/screens/mis_aportes_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'firebase_options.dart';
 import 'package:fvp/fvp.dart' as fvp;
 
@@ -56,6 +57,10 @@ Future<void> main() async {
     debugPrint('>>> MAIN: Initializing Firebase...');
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
+    );
+    FirebaseFirestore.instance.settings = const Settings(
+      persistenceEnabled: true,
+      cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
     );
     debugPrint('>>> MAIN: Firebase initialized.');
   } catch (e) {

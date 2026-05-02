@@ -17,6 +17,8 @@ import 'package:lambda_app/models/lat_lng.dart' as local_coords;
 import 'package:lambda_app/providers/fiber_cut_provider.dart';
 import 'package:lambda_app/models/fiber_cut_report.dart';
 import 'package:lambda_app/screens/fiber_cut_screen.dart';
+import 'package:lambda_app/services/search_service.dart';
+import 'package:lambda_app/providers/semantic_search_provider.dart';
 
 // webview_windows solo existe en Windows, importar condicionalmente
 // ignore: uri_does_not_exist
@@ -43,8 +45,10 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
   late final GeocodingService _geocoding = GeocodingService(
     apiKey: AppConfig.mapsApiKey,
   );
+  late final SearchService _searchService = SearchService();
 
   Set<Marker> _markers = {};
+  Set<Marker> _semanticMarkers = {}; // Para pines temporales de búsqueda semántica
   List<User> _mapUsers = [];
   List<FiberCutReport> _mapFiberCuts = [];
   bool _showFiberCuts = true;
@@ -429,7 +433,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
 
       if (mounted) {
         setState(() {
-          _markers = newMarkers;
+          _markers = {...newMarkers, ..._semanticMarkers};
         });
       }
     } catch (e) {
@@ -529,25 +533,113 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
     }
   }
 
-  Future<void> _searchNativeMap(String address) async {
-    if (address.trim().isEmpty) return;
+  Future<void> _searchNativeMap(String query) async {
     if (_googleMapController == null) return;
     setState(() => _isSearching = true);
+    
+    GeocodingResult? geoResult;
+    
+    // 1. Intentar Geocoding Tradicional (Direcciones Físicas)
     try {
-      final result = await _geocoding.geocode(address);
+      String searchAddress = query;
+      if (!query.toLowerCase().contains('chile')) {
+        searchAddress = '$query, Chile';
+      }
+      geoResult = await _geocoding.geocode(searchAddress);
+    } catch (e) {
+      debugPrint('Geocoding error (ignoring to try semantic): $e');
+    }
+
+    if (geoResult != null) {
       if (!mounted) return;
-      if (result == null) {
+      
+      final addressMarker = Marker(
+        markerId: const MarkerId('search_result'),
+        position: LatLng(geoResult.lat, geoResult.lng),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+        infoWindow: InfoWindow(
+          title: 'Dirección Encontrada',
+          snippet: geoResult.formattedAddress ?? query,
+        ),
+      );
+
+      await _googleMapController!.animateCamera(
+        CameraUpdate.newLatLngZoom(LatLng(geoResult.lat, geoResult.lng), 15),
+      );
+      
+      setState(() {
+        _semanticMarkers = {addressMarker};
+        _isSearching = false;
+        _rebuildMarkers();
+      });
+      return;
+    }
+
+    // 2. Si falla Geocoding, intentar Búsqueda Semántica Lambda (Picás, Hospedaje, etc.)
+    try {
+      final user = ref.read(authProvider).valueOrNull;
+      final semanticResults = await _searchService.performOmniSearch(
+        query,
+        isAdmin: user?.role == UserRole.SuperAdmin || user?.role == UserRole.Admin,
+        userLocation: user?.lastKnownPosition,
+      );
+
+      if (semanticResults.isNotEmpty) {
+        final resultsWithCoords = semanticResults.where((r) => r.coordinates != null).toList();
+        
+        if (resultsWithCoords.isNotEmpty) {
+          final newSemanticMarkers = <Marker>{};
+          for (final res in resultsWithCoords) {
+            final hue = res.source == 'picás' ? BitmapDescriptor.hueOrange : 
+                        res.source == 'hospedaje' ? BitmapDescriptor.hueAzure : 
+                        BitmapDescriptor.hueYellow;
+            
+            newSemanticMarkers.add(
+              Marker(
+                markerId: MarkerId('semantic_${res.id}'),
+                position: LatLng(res.coordinates!.latitude, res.coordinates!.longitude),
+                icon: BitmapDescriptor.defaultMarkerWithHue(hue),
+                infoWindow: InfoWindow(
+                  title: res.title,
+                  snippet: res.content,
+                ),
+              ),
+            );
+          }
+
+          if (!mounted) return;
+          setState(() {
+            _semanticMarkers = newSemanticMarkers;
+            _rebuildMarkers();
+          });
+
+          // Animamos a la primera coincidencia
+          final first = resultsWithCoords.first.coordinates!;
+          await _googleMapController!.animateCamera(
+            CameraUpdate.newLatLngZoom(LatLng(first.latitude, first.longitude), 14),
+          );
+          return;
+        }
+      }
+
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             backgroundColor: Colors.redAccent,
-            content: Text('No encontrada'),
+            content: Text('Sin resultados en el radar Lambda.'),
           ),
         );
-        return;
       }
-      await _googleMapController!.animateCamera(
-        CameraUpdate.newLatLngZoom(LatLng(result.lat, result.lng), 14),
-      );
+    } catch (e) {
+      debugPrint('Map Semantic Search Error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.redAccent,
+            content: Text('Error en el radar: $e'),
+          ),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isSearching = false);
     }

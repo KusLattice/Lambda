@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lambda_app/models/message_model.dart';
 import 'package:lambda_app/models/user_model.dart';
 import 'package:lambda_app/providers/auth_provider.dart';
+import 'package:lambda_app/providers/messaging_provider.dart';
 import 'package:lambda_app/screens/chat_conversation_screen.dart';
 import 'package:lambda_app/widgets/grid_background.dart';
 import 'package:intl/intl.dart';
@@ -109,7 +110,7 @@ class _ConversationList extends ConsumerWidget {
     if (me == null) return const SizedBox.shrink();
 
     return StreamBuilder<List<Message>>(
-      stream: ref.read(authProvider.notifier).getChatConversationsStream(),
+      stream: ref.read(messagingProvider).getChatConversationsStream(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(
@@ -351,7 +352,7 @@ class _ConversationTile extends ConsumerWidget {
             // Marcar como leído
             final chatId = lastMessage.chatId;
             if (chatId.isNotEmpty) {
-              ref.read(authProvider.notifier).markChatMessagesAsRead(chatId);
+              ref.read(messagingProvider).markChatMessagesAsRead(chatId);
             }
 
             // Navegar usando parámetros consistentes con main.dart
@@ -491,7 +492,7 @@ class _ConversationTile extends ConsumerWidget {
 
     if (confirm == true && context.mounted) {
       await ref
-          .read(authProvider.notifier)
+          .read(messagingProvider)
           .deleteChatConversation(lastMessage.chatId);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -520,7 +521,7 @@ class _MessageList extends ConsumerWidget {
     if (user == null) return const SizedBox.shrink();
 
     return StreamBuilder<List<Message>>(
-      stream: ref.read(authProvider.notifier).getMessagesStream(label),
+      stream: ref.read(messagingProvider).getMessagesStream(label),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(
@@ -758,11 +759,11 @@ class _MessageList extends ConsumerWidget {
                                 onPressed: () async {
                                   if (isChatMsg) {
                                     await ref
-                                        .read(authProvider.notifier)
+                                        .read(messagingProvider)
                                         .restoreChatConversation(msg.chatId);
                                   } else {
                                     await ref
-                                        .read(authProvider.notifier)
+                                        .read(messagingProvider)
                                         .restoreMessageFromTrash(msg.id);
                                   }
                                 },
@@ -842,11 +843,11 @@ class _MessageList extends ConsumerWidget {
       try {
         if (chatId != null) {
           await ref
-              .read(authProvider.notifier)
+              .read(messagingProvider)
               .permanentlyDeleteChatConversation(chatId);
         } else {
           await ref
-              .read(authProvider.notifier)
+              .read(messagingProvider)
               .permanentlyDeleteMessage(messageId);
         }
         if (context.mounted) {
@@ -902,7 +903,7 @@ class _ContactsList extends ConsumerWidget {
         ),
         Expanded(
           child: StreamBuilder<List<User>>(
-            stream: ref.read(authProvider.notifier).getContactsDataStream(),
+            stream: ref.read(messagingProvider).getContactsStream(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(
@@ -1024,7 +1025,7 @@ class _ContactsList extends ConsumerWidget {
                   .read(authProvider.notifier)
                   .findUserToContact(controller.text);
               if (tech != null) {
-                await ref.read(authProvider.notifier).addContact(tech.id);
+                await ref.read(messagingProvider).addContact(tech.id);
                 if (context.mounted) Navigator.pop(context);
               } else {
                 if (context.mounted) {

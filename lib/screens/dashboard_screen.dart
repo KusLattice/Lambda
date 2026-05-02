@@ -14,6 +14,7 @@ import 'package:lambda_app/widgets/draggable_module.dart';
 import 'package:lambda_app/widgets/weather_banner.dart';
 import 'package:lambda_app/widgets/grid_background.dart';
 import 'package:lambda_app/providers/dashboard_providers.dart';
+import 'package:lambda_app/widgets/offline_banner.dart';
 import 'package:lambda_app/providers/notification_providers.dart';
 import 'package:lambda_app/config/modules_config.dart';
 import 'package:lambda_app/widgets/search_banner.dart';
@@ -306,6 +307,7 @@ class _MainDashboardState extends ConsumerState<MainDashboard>
           ),
       body: Column(
         children: [
+          const OfflineBanner(),
           // ── Banner de Clima (fijo, parte superior) ─────────────────────
           const WeatherBanner(),
           // ── Banner de Noticias de Telecomunicaciones ───────────────────

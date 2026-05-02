@@ -270,6 +270,24 @@ class _SemanticResultCard extends ConsumerWidget {
             Row(
               children: [
                 _buildSourceBadge(result.source, theme.accent),
+                if (result.distance != null) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.cyanAccent.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      '${result.distance!.toStringAsFixed(1)} KM',
+                      style: const TextStyle(
+                        color: Colors.cyanAccent,
+                        fontSize: 8,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
                 const Spacer(),
                 Text(
                   '${(result.score * 100).toStringAsFixed(0)}% COINCIDENCIA',
@@ -278,15 +296,32 @@ class _SemanticResultCard extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 8),
-            Text(
-              result.title,
-              style: TextStyle(
-                color: result.source == 'mensajes'
-                    ? Colors.orangeAccent
-                    : Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 15,
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    result.title,
+                    style: TextStyle(
+                      color: result.source == 'mensajes'
+                          ? Colors.orangeAccent
+                          : Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
+                ),
+                if (result.coordinates != null)
+                  IconButton(
+                    icon: const Icon(Icons.map_outlined, color: Colors.amber, size: 18),
+                    onPressed: () {
+                      Navigator.pushNamed(
+                        context,
+                        '/map',
+                        arguments: result.coordinates,
+                      );
+                    },
+                  ),
+              ],
             ),
             const SizedBox(height: 4),
             Text(
