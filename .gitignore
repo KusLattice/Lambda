@@ -31,6 +31,7 @@ migrate_working_dir/
 .pub-cache/
 .pub/
 /build/
+build/
 /coverage/
 
 # Symbolication related
@@ -61,13 +62,17 @@ app_runtime_logs.txt
 build_logs*.txt
 apk_*.txt
 flutter_logs.txt
-tools/deploy_ota/
+tools/deploy_ota/node_modules/
 devices.txt
 devices.json
-temp_news.json
+temp_*.json
 lint.txt
 
 # Code Dumps
 lambda_codigo_completo.txt
 *codigo_completo.txt
 *código_completo.txt
+
+# Dart generated files
+*.g.dart
+*.freezed.dart

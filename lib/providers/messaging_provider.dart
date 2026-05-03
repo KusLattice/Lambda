@@ -387,37 +387,16 @@ class MessagingService {
 
     final isAdmin = user.isAdmin;
 
-    final asSenderQuery = _firestore
-        .collection(FC.messages)
-        .where('senderId', isEqualTo: user.id);
-
-    final asReceiverQuery = _firestore
-        .collection(FC.messages)
-        .where('receiverId', isEqualTo: user.id);
-
-    final List<Stream<QuerySnapshot>> streams = [
-      asSenderQuery.snapshots(),
-      asReceiverQuery.snapshots(),
-    ];
-
-    if (isAdmin) {
-      streams.add(
-        _firestore
-            .collection(FC.messages)
-            .where('senderId', isEqualTo: 'system_admin')
-            .snapshots(),
-      );
-      streams.add(
-        _firestore
-            .collection(FC.messages)
-            .where('receiverId', isEqualTo: 'system_admin')
-            .snapshots(),
-      );
-    }
-
-    final combinedStream = StreamGroup.merge([
-      asSenderQuery.snapshots(),
-      asReceiverQuery.snapshots(),
+    // UNA sola lista — reutilizada tanto en StreamGroup como en asyncExpand.
+    final streams = <Stream<QuerySnapshot>>[
+      _firestore
+          .collection(FC.messages)
+          .where('senderId', isEqualTo: user.id)
+          .snapshots(),
+      _firestore
+          .collection(FC.messages)
+          .where('receiverId', isEqualTo: user.id)
+          .snapshots(),
       if (isAdmin) ...[
         _firestore
             .collection(FC.messages)
@@ -428,22 +407,18 @@ class MessagingService {
             .where('receiverId', isEqualTo: 'system_admin')
             .snapshots(),
       ],
-    ]);
+    ];
 
-    return combinedStream
-        .map((_) => [])
+    return StreamGroup.merge(streams)
+        .map((_) => <List<Message>>[])
         .asyncExpand((_) async* {
-          final List<QuerySnapshot> snapshots = [];
-          for (final s in streams) {
-            snapshots.add(await s.first);
-          }
+          // Lecturas en paralelo — más rápido que el for-loop secuencial.
+          final snaps = await Future.wait(streams.map((s) => s.first));
 
-          final allDocs = snapshots.expand((s) => s.docs).toList();
-          final allMessages = allDocs
-              .map(
-                (doc) =>
-                    Message.fromMap(doc.data() as Map<String, dynamic>, doc.id),
-              )
+          final allMessages = snaps
+              .expand((s) => s.docs)
+              .map((doc) =>
+                  Message.fromMap(doc.data() as Map<String, dynamic>, doc.id))
               .toList();
 
           final Map<String, Message> latestByChatId = {};
@@ -471,17 +446,14 @@ class MessagingService {
             }
           }
 
-          final conversations = latestByChatId.values.toList()
+          yield latestByChatId.values.toList()
             ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
-          yield conversations;
         })
         .distinct((prev, next) {
           if (prev.length != next.length) return false;
           for (int i = 0; i < prev.length; i++) {
             if (prev[i].id != next[i].id ||
-                prev[i].timestamp != next[i].timestamp) {
-              return false;
-            }
+                prev[i].timestamp != next[i].timestamp) return false;
           }
           return true;
         });

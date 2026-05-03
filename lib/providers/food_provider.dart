@@ -50,12 +50,12 @@ class FoodNotifier extends StateNotifier<AsyncValue<List<FoodPost>>> {
     final docRef = _firestore.collection(FC.foodTracker).doc();
 
     // Subir imágenes
-    final imageUrls = await StorageUploadService.uploadImages(imageFiles, 'market_media');
+    final imageUrls = await StorageUploadService.uploadImages(imageFiles, 'food_media');
 
     // Subir video
     final List<String> videoUrls = [];
     if (videoFile != null) {
-      final videoUrl = await StorageUploadService.uploadVideo(videoFile, 'market_media');
+      final videoUrl = await StorageUploadService.uploadVideo(videoFile, 'food_media');
       if (videoUrl != null) videoUrls.add(videoUrl);
     }
 

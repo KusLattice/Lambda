@@ -52,15 +52,11 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
 
   bool _canEditRole(User currentUser, User targetUser) {
     if (currentUser.id == targetUser.id) return false;
-    if (currentUser.correo == 'kus4587@gmail.com') {
-      return true; // Super bypass para Seba
-    }
-    if (currentUser.isSuperAdmin) {
-      // Un SuperAdmin no puede editar a otro SuperAdmin (excepto Seba)
-      return targetUser.role != UserRole.SuperAdmin;
-    }
-    if (currentUser.role == UserRole.Admin) { // Exactamente Admin (no SuperAdmin)
-      // Un Admin no puede editar a otros Admins o SuperAdmins
+    // SuperAdmin puede editar a cualquier otro usuario excepto a sí mismo.
+    // isSuperAdmin ya cubre el bypass — no se necesita check por email.
+    if (currentUser.isSuperAdmin) return true;
+    if (currentUser.isAdmin) {
+      // Un Admin no puede editar a SuperAdmins ni a otros Admins.
       return targetUser.role != UserRole.SuperAdmin &&
           targetUser.role != UserRole.Admin;
     }
@@ -506,23 +502,17 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
         }).toList();
 
         filteredUsers.sort((a, b) {
-          const sebaEmail = 'kus4587@gmail.com';
-          if (a.correo == sebaEmail) return -1;
-          if (b.correo == sebaEmail) return 1;
-
-          if (a.role == UserRole.SuperAdmin && b.role != UserRole.SuperAdmin) {
-            return -1;
-          }
-          if (b.role == UserRole.SuperAdmin && a.role != UserRole.SuperAdmin) {
-            return 1;
-          }
-
-          if (a.role == UserRole.Admin && b.role != UserRole.Admin) return -1;
-          if (b.role == UserRole.Admin && a.role != UserRole.Admin) return 1;
-
-          final dateA = a.fechaDeIngreso ?? DateTime(2000);
-          final dateB = b.fechaDeIngreso ?? DateTime(2000);
-          return dateA.compareTo(dateB);
+          // Ordenar por jerarquía de rol; desempate por nombre.
+          const roleOrder = {
+            UserRole.SuperAdmin: 0,
+            UserRole.Admin: 1,
+            UserRole.TecnicoVerificado: 2,
+            UserRole.TecnicoInvitado: 3,
+          };
+          final aOrder = roleOrder[a.role] ?? 99;
+          final bOrder = roleOrder[b.role] ?? 99;
+          if (aOrder != bOrder) return aOrder.compareTo(bOrder);
+          return a.nombre.compareTo(b.nombre);
         });
 
         return ListView(

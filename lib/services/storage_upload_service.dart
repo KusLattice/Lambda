@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:firebase_storage/firebase_storage.dart';
 
 class StorageUploadService {
@@ -17,6 +18,18 @@ class StorageUploadService {
       urls.add(await ref.getDownloadURL());
     }
     return urls;
+  }
+
+  /// Sube exactamente un archivo de imagen. Alternativa semántica a uploadImages([file])
+  /// para casos de imagen única (chamba, profile fallback, etc.).
+  static Future<String?> uploadSingleImage(
+    File file,
+    String basePath,
+  ) async {
+    final ts = DateTime.now().millisecondsSinceEpoch;
+    final ref = _storage.ref().child('$basePath/${ts}_img.jpg');
+    await ref.putFile(file);
+    return ref.getDownloadURL();
   }
 
   /// Sube un video y retorna su URL.
@@ -41,8 +54,7 @@ class StorageUploadService {
       try {
         await _storage.refFromURL(url).delete();
       } catch (e) {
-        // Silenciamos errores (ej: el archivo ya no existe)
-        print('Error deleting $url: $e');
+        debugPrint('StorageUploadService: error borrando $url — $e');
       }
     }
   }
