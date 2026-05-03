@@ -402,6 +402,14 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
             markerId: MarkerId('user_${user.id}'),
             position: animatedPos,
             icon: icon,
+            infoWindow: InfoWindow(
+              title: user.apodo ?? user.nombre,
+              snippet: (user.customStatus != null && user.customStatus!.isNotEmpty)
+                  ? 'Estado: ${user.customStatus}'
+                  : user.statusEmoji != null 
+                      ? 'Estado: ${user.statusEmoji}' 
+                      : user.role.displayName,
+            ),
             onTap: () => _showUserOptions(user),
           ),
         );
@@ -670,115 +678,116 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
 
     final isGuest = user.role == UserRole.TecnicoInvitado;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Mapa'),
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Scaffold(
         backgroundColor: Colors.black,
-        foregroundColor: Colors.amber,
-      ),
-      body: Stack(
-        children: [
-          Column(
-            children: [
-              _buildSearchField(),
-              Expanded(child: _buildMap(user)),
-            ],
-          ),
-          Positioned(
-            bottom: 100,
-            left: 20,
-            child: Column(
-              children: [
-                // 🗡️ Botón de Filtro de Fibras Cortadas
-                FloatingActionButton(
-                  heroTag: 'filter_fiber',
-                  mini: true,
-                  backgroundColor: _showFiberCuts
-                      ? Colors.redAccent
-                      : Colors.grey[900],
-                  child: Icon(
-                    _showFiberCuts ? Icons.link_off : Icons.link,
-                    color: _showFiberCuts ? Colors.black : Colors.white24,
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      _showFiberCuts = !_showFiberCuts;
-                      _rebuildMarkers();
-                    });
-                  },
-                ),
-                if (!isGuest) ...[
-                  const SizedBox(height: 10),
-                  // 🛸 Botón de Visibilidad de Usuario
+        body: Stack(
+          children: [
+            Positioned.fill(child: _buildMap(user)),
+            // Buscador superior
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 10,
+              left: 15,
+              right: 15,
+              child: _buildSearchField(),
+            ),
+            Positioned(
+              bottom: 100,
+              left: 20,
+              child: Column(
+                children: [
+                  // 🗡️ Botón de Filtro de Fibras Cortadas
                   FloatingActionButton(
-                    heroTag: 'map_visibility',
+                    heroTag: 'filter_fiber',
                     mini: true,
-                    backgroundColor: user.isVisibleOnMap == true
-                        ? Colors.greenAccent
-                        : Colors.grey[800],
+                    backgroundColor: _showFiberCuts
+                        ? Colors.redAccent
+                        : Colors.grey[900],
                     child: Icon(
-                      user.isVisibleOnMap == true
-                          ? Icons.visibility
-                          : Icons.visibility_off,
-                      color: Colors.black,
+                      _showFiberCuts ? Icons.link_off : Icons.link,
+                      color: _showFiberCuts ? Colors.black : Colors.white24,
                     ),
-                    onPressed: () => _toggleVisibility(user),
+                    onPressed: () {
+                      setState(() {
+                        _showFiberCuts = !_showFiberCuts;
+                        _rebuildMarkers();
+                      });
+                    },
                   ),
-                  const SizedBox(height: 10),
-                  // 🕶️ Filtro de Roles (Solo Admins)
-                  if (user.role == UserRole.Admin || user.role == UserRole.SuperAdmin)
-                    PopupMenuButton<UserRole?>(
-                      tooltip: 'Filtrar por Segmento',
-                      color: Colors.black87,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        side: const BorderSide(color: Colors.amber, width: 1),
+                  if (!isGuest) ...[
+                    const SizedBox(height: 10),
+                    // 🛸 Botón de Visibilidad de Usuario
+                    FloatingActionButton(
+                      heroTag: 'map_visibility',
+                      mini: true,
+                      backgroundColor: user.isVisibleOnMap == true
+                          ? Colors.greenAccent
+                          : Colors.grey[800],
+                      child: Icon(
+                        user.isVisibleOnMap == true
+                            ? Icons.visibility
+                            : Icons.visibility_off,
+                        color: Colors.black,
                       ),
-                      onSelected: (role) {
-                        setState(() {
-                          _filterRole = role;
-                          _rebuildMarkers();
-                        });
-                      },
-                      itemBuilder: (context) => [
-                        const PopupMenuItem(
-                          value: null,
-                          child: Text('Todos los Segmentos', style: TextStyle(color: Colors.amber)),
+                      onPressed: () => _toggleVisibility(user),
+                    ),
+                    const SizedBox(height: 10),
+                    // 🕶️ Filtro de Roles (Solo Admins)
+                    if (user.role == UserRole.Admin || user.role == UserRole.SuperAdmin)
+                      PopupMenuButton<UserRole?>(
+                        tooltip: 'Filtrar por Segmento',
+                        color: Colors.black87,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          side: const BorderSide(color: Colors.amber, width: 1),
                         ),
-                        const PopupMenuDivider(height: 1),
-                        ...UserRole.values.map(
-                          (r) => PopupMenuItem(
-                            value: r,
-                            child: Text(r.displayName, style: const TextStyle(color: Colors.white)),
+                        onSelected: (role) {
+                          setState(() {
+                            _filterRole = role;
+                            _rebuildMarkers();
+                          });
+                        },
+                        itemBuilder: (context) => [
+                          const PopupMenuItem(
+                            value: null,
+                            child: Text('Todos los Segmentos', style: TextStyle(color: Colors.amber)),
+                          ),
+                          const PopupMenuDivider(height: 1),
+                          ...UserRole.values.map(
+                            (r) => PopupMenuItem(
+                              value: r,
+                              child: Text(r.displayName, style: const TextStyle(color: Colors.white)),
+                            ),
+                          ),
+                        ],
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: _filterRole == null ? Colors.grey[900] : Colors.amber,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.3),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            _filterRole == null ? Icons.filter_alt_off : Icons.filter_alt,
+                            color: _filterRole == null ? Colors.white54 : Colors.black,
+                            size: 20,
                           ),
                         ),
-                      ],
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: _filterRole == null ? Colors.grey[900] : Colors.amber,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.3),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Icon(
-                          _filterRole == null ? Icons.filter_alt_off : Icons.filter_alt,
-                          color: _filterRole == null ? Colors.white54 : Colors.black,
-                          size: 20,
-                        ),
                       ),
-                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -809,6 +818,17 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                 fontSize: 20,
               ),
             ),
+            if (user.statusEmoji != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                user.statusEmoji!,
+                style: const TextStyle(
+                  color: Colors.greenAccent,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+            ],
             const SizedBox(height: 10),
             Text(
               user.role.displayName,
@@ -1063,49 +1083,63 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
 
   Widget _buildSearchField() {
     return Container(
-      color: Colors.black,
-      padding: const EdgeInsets.all(8.0),
+      height: 48,
+      decoration: BoxDecoration(
+        color: const Color(0xFF121212).withValues(alpha: 0.9),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.15),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.5),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: TextField(
         controller: _textController,
-        style: const TextStyle(color: Colors.white),
+        style: const TextStyle(color: Colors.white, fontSize: 14),
+        cursorColor: Colors.greenAccent,
         decoration: InputDecoration(
-          hintText: 'Buscar dirección...',
-          hintStyle: const TextStyle(color: Colors.white54),
+          hintText: 'Buscar dirección o lugar...',
+          hintStyle: const TextStyle(color: Colors.white38, fontSize: 13),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.only(left: 15, top: 15),
-          suffixIcon: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (_textController.text.isNotEmpty)
-                IconButton(
+          contentPadding: const EdgeInsets.symmetric(vertical: 12),
+          prefixIcon: const Icon(
+            Icons.search,
+            color: Colors.greenAccent,
+            size: 20,
+          ),
+          suffixIcon: _textController.text.isNotEmpty
+              ? IconButton(
                   icon: const Icon(
                     Icons.close_rounded,
-                    color: Colors.white38,
-                    size: 16,
+                    color: Colors.white54,
+                    size: 18,
                   ),
                   onPressed: () {
                     _textController.clear();
                     setState(() {});
                   },
-                ),
-              IconButton(
-                icon: _isSearching
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
+                )
+              : (_isSearching
+                  ? const Padding(
+                      padding: EdgeInsets.all(12.0),
+                      child: SizedBox(
+                        width: 16,
+                        height: 16,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
                           color: Colors.greenAccent,
                         ),
-                      )
-                    : const Icon(Icons.search, color: Colors.greenAccent),
-                onPressed: _isSearching
-                    ? null
-                    : () => _searchNativeMap(_textController.text),
-              ),
-            ],
-          ),
+                      ),
+                    )
+                  : null),
         ),
+        onChanged: (val) => setState(() {}),
         onSubmitted: (value) => _searchNativeMap(value),
       ),
     );

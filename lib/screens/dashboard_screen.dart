@@ -33,7 +33,6 @@ class MainDashboard extends ConsumerStatefulWidget {
 class _MainDashboardState extends ConsumerState<MainDashboard>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   Timer? _presenceTimer;
-  bool _isEditMode = false;
 
   @override
   void initState() {
@@ -168,30 +167,20 @@ class _MainDashboardState extends ConsumerState<MainDashboard>
     final currentTheme = ref.watch(themeProvider);
     final showFab = ref.watch(themeFabVisibleProvider);
 
-    return Scaffold(
-      backgroundColor: currentTheme.background,
-      appBar: AppBar(
-        title: const Text('LAMBDA'),
-        centerTitle: true,
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Scaffold(
         backgroundColor: currentTheme.background,
-      ),
+        appBar: AppBar(
+          title: const Text('LAMBDA'),
+          centerTitle: true,
+          backgroundColor: currentTheme.background,
+        ),
       drawer: AppDrawer(
         user: user,
         onShowSecretDialog: _showSecretAccessDialog,
       ),
-      floatingActionButton: _isEditMode
-          ? FloatingActionButton.extended(
-              onPressed: () {
-                setState(() {
-                  _isEditMode = false;
-                });
-              },
-              icon: const Icon(Icons.check),
-              label: const Text('Terminar'),
-              backgroundColor: Colors.greenAccent,
-              foregroundColor: Colors.black,
-            )
-          : !showFab
+      floatingActionButton: !showFab
               ? null
               : Padding(
               padding: const EdgeInsets.only(bottom: 24.0), // Elevado para evitar bordes/gestos
@@ -386,7 +375,7 @@ class _MainDashboardState extends ConsumerState<MainDashboard>
                     final Widget child = (moduleConfig.routeName == null)
                         ? const CompassModule()
                         : InkWell(
-                          onTap: _isEditMode ? null : () {
+                          onTap: () {
                             if (moduleConfig.routeName == '/fiber-cut' &&
                                 user.role == UserRole.TecnicoInvitado) {
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -401,98 +390,6 @@ class _MainDashboardState extends ConsumerState<MainDashboard>
                             }
                             Navigator.of(context).pushNamed(
                               moduleConfig.routeName!,
-                            );
-                          },
-                          onLongPress: _isEditMode ? null : () {
-                            showModalBottomSheet(
-                              context: context,
-                              backgroundColor: const Color(0xFF111111),
-                              shape: const RoundedRectangleBorder(
-                                borderRadius: BorderRadius.vertical(
-                                  top: Radius.circular(20),
-                                ),
-                              ),
-                              builder: (_) => Padding(
-                                padding: const EdgeInsets.all(20),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      moduleConfig.icon,
-                                      color: moduleConfig.iconColor,
-                                      size: 40,
-                                    ),
-                                    const SizedBox(height: 10),
-                                    Text(
-                                      title,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 20),
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceEvenly,
-                                      children: [
-                                        OutlinedButton.icon(
-                                          onPressed: () {
-                                            Navigator.pop(context);
-                                            Navigator.of(
-                                              context,
-                                            ).pushNamed(
-                                              moduleConfig.routeName!,
-                                            );
-                                          },
-                                          icon: const Icon(
-                                            Icons.open_in_new,
-                                            size: 16,
-                                          ),
-                                          label: Text('Ir a $title'),
-                                          style: OutlinedButton.styleFrom(
-                                            foregroundColor:
-                                                moduleConfig.iconColor,
-                                            side: BorderSide(
-                                              color: moduleConfig.iconColor
-                                                  .withValues(alpha: 0.5),
-                                            ),
-                                          ),
-                                        ),
-                                        OutlinedButton.icon(
-                                          onPressed: () {
-                                            Navigator.pop(context);
-                                            setState(() {
-                                              _isEditMode = true;
-                                            });
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              const SnackBar(
-                                                backgroundColor: Colors.blueAccent,
-                                                content: Text(
-                                                  'Modo edición activo. Mantén presionado un ícono para arrastrarlo.',
-                                                ),
-                                                duration: Duration(seconds: 3),
-                                              ),
-                                            );
-                                          },
-                                          icon: const Icon(
-                                            Icons.drag_indicator,
-                                            size: 16,
-                                          ),
-                                          label: const Text('Mover'),
-                                          style: OutlinedButton.styleFrom(
-                                            foregroundColor: Colors.white54,
-                                            side: const BorderSide(
-                                              color: Colors.white24,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 8),
-                                  ],
-                                ),
-                              ),
                             );
                           },
                           child: Center(
@@ -524,6 +421,7 @@ class _MainDashboardState extends ConsumerState<MainDashboard>
             ),
           ),
         ],
+      ),
       ),
     );
   }

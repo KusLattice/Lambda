@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lambda_app/models/chamba_model.dart';
@@ -5,7 +6,10 @@ import 'package:lambda_app/providers/chamba_provider.dart';
 import 'package:lambda_app/models/user_model.dart';
 import 'package:lambda_app/providers/auth_provider.dart';
 import 'package:lambda_app/screens/public_profile_screen.dart';
+import 'package:lambda_app/screens/chat_conversation_screen.dart';
+import 'package:lambda_app/services/notification_service.dart';
 import 'package:lambda_app/widgets/grid_background.dart';
+import 'package:lambda_app/utils/image_utils.dart';
 import 'package:intl/intl.dart';
 
 class ChambasScreen extends ConsumerStatefulWidget {
@@ -18,6 +22,14 @@ class ChambasScreen extends ConsumerStatefulWidget {
 
 class _ChambasScreenState extends ConsumerState<ChambasScreen> {
   bool _hasOpenedInitialChamba = false;
+  final TextEditingController _searchCtrl = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,72 +39,157 @@ class _ChambasScreenState extends ConsumerState<ChambasScreen> {
     final currentUser = ref.watch(authProvider).valueOrNull;
     final isGuest = currentUser?.role == UserRole.TecnicoInvitado;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'CHAMBAS',
-          style: TextStyle(
-            fontFamily: 'Courier',
-            color: Colors.greenAccent,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        backgroundColor: Colors.black,
-        elevation: 0,
-      ),
-      floatingActionButton: isGuest
-          ? null
-          : FloatingActionButton(
-              onPressed: () => _showCreateChambaDialog(context),
-              backgroundColor: Colors.greenAccent,
-              child: const Icon(Icons.add, color: Colors.black),
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text(
+            'CHAMBAS',
+            style: TextStyle(
+              fontFamily: 'Courier',
+              color: Colors.greenAccent,
+              fontWeight: FontWeight.bold,
             ),
-      body: Stack(
-        children: [
-          const GridBackground(child: SizedBox.expand()),
-          chambasAsync.when(
-            data: (chambas) => chambas.isEmpty
-                ? const Center(
-                    child: Text(
-                      'No hay chambas registradas.',
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: chambas.length,
-                    itemBuilder: (context, index) {
-                      final chamba = chambas[index];
+          ),
+          backgroundColor: Colors.black,
+          elevation: 0,
+        ),
+        floatingActionButton: isGuest
+            ? null
+            : FloatingActionButton(
+                onPressed: () => _showCreateChambaDialog(context),
+                backgroundColor: Colors.greenAccent,
+                child: const Icon(Icons.add, color: Colors.black),
+              ),
+        body: Stack(
+          children: [
+            const GridBackground(child: SizedBox.expand()),
+            Column(
+              children: [
+                _buildSearchBar(),
+                Expanded(
+                  child: chambasAsync.when(
+                    data: (chambas) {
+                      final filteredChambas = chambas.where((chamba) {
+                        final query = _searchQuery.toLowerCase();
+                        return chamba.title.toLowerCase().contains(query) ||
+                            chamba.description.toLowerCase().contains(query);
+                      }).toList();
 
-                      // Deep Link
-                      if (initialChambaId != null &&
-                          !_hasOpenedInitialChamba &&
-                          chamba.id == initialChambaId) {
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          if (mounted && !_hasOpenedInitialChamba) {
-                            setState(() => _hasOpenedInitialChamba = true);
-                            _showChambaDetails(context, chamba);
-                          }
-                        });
+                      if (filteredChambas.isEmpty) {
+                        return const Center(
+                          child: Text(
+                            'No se encontraron chambas.',
+                            style: TextStyle(color: Colors.grey, fontFamily: 'Courier'),
+                          ),
+                        );
                       }
 
-                      return InkWell(
-                        onTap: () => _showChambaDetails(context, chamba),
-                        child: _ChambaCard(chamba: chamba),
+                      return ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: filteredChambas.length,
+                        itemBuilder: (context, index) {
+                          final chamba = filteredChambas[index];
+
+                          // Deep Link
+                          if (initialChambaId != null &&
+                              !_hasOpenedInitialChamba &&
+                              chamba.id == initialChambaId) {
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              if (mounted && !_hasOpenedInitialChamba) {
+                                setState(() => _hasOpenedInitialChamba = true);
+                                _showChambaDetails(context, chamba);
+                              }
+                            });
+                          }
+
+                          return InkWell(
+                            onTap: () => _showChambaDetails(context, chamba),
+                            child: _ChambaCard(chamba: chamba),
+                          );
+                        },
                       );
                     },
+                    loading: () => const Center(
+                      child: CircularProgressIndicator(color: Colors.greenAccent),
+                    ),
+                    error: (e, _) => Center(
+                      child: Text(
+                        'Error: $e',
+                        style: const TextStyle(color: Colors.red),
+                      ),
+                    ),
                   ),
-            loading: () => const Center(
-              child: CircularProgressIndicator(color: Colors.greenAccent),
+                ),
+              ],
             ),
-            error: (e, _) => Center(
-              child: Text(
-                'Error: $e',
-                style: const TextStyle(color: Colors.red),
-              ),
-            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSearchBar() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      child: Container(
+        height: 44,
+        decoration: BoxDecoration(
+          color: const Color(0xFF121212),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.1),
+            width: 1,
           ),
-        ],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.4),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: TextField(
+          controller: _searchCtrl,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontFamily: 'Inter',
+          ),
+          cursorColor: Colors.greenAccent,
+          decoration: InputDecoration(
+            hintText: 'BUSCAR CHAMBA...',
+            hintStyle: TextStyle(
+              color: Colors.white.withValues(alpha: 0.25),
+              fontSize: 12,
+              fontFamily: 'Courier',
+              letterSpacing: 1.5,
+            ),
+            prefixIcon: Icon(
+              Icons.search_rounded,
+              color: Colors.greenAccent.withValues(alpha: 0.5),
+              size: 20,
+            ),
+            suffixIcon: _searchCtrl.text.isNotEmpty
+                ? IconButton(
+                    icon: const Icon(
+                      Icons.close_rounded,
+                      color: Colors.white38,
+                      size: 18,
+                    ),
+                    onPressed: () {
+                      _searchCtrl.clear();
+                      setState(() => _searchQuery = '');
+                    },
+                  )
+                : null,
+            border: InputBorder.none,
+            contentPadding: const EdgeInsets.symmetric(vertical: 10),
+          ),
+          onChanged: (val) {
+            setState(() => _searchQuery = val);
+          },
+        ),
       ),
     );
   }
@@ -156,7 +253,9 @@ class _ChambasScreenState extends ConsumerState<ChambasScreen> {
     );
     final salaryCtrl = TextEditingController(text: initialChamba?.salary ?? '');
     ChambaType selectedType =
-        initialChamba?.type ?? ChambaType.ofrece; // Corrected initialization
+        initialChamba?.type ?? ChambaType.ofrece;
+    File? selectedImage;
+    String? currentImageUrl = initialChamba?.imageUrl;
 
     showDialog(
       context: context,
@@ -234,17 +333,92 @@ class _ChambasScreenState extends ConsumerState<ChambasScreen> {
                     },
                   ),
 
-                  TextField(
-                    controller: salaryCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Presupuesto/Sueldo (opcional)',
+                    TextField(
+                      controller: salaryCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Presupuesto/Sueldo (opcional)',
+                      ),
+                      style: const TextStyle(color: Colors.white),
                     ),
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                ],
+                    const SizedBox(height: 20),
+                    // Image Picker Section
+                    GestureDetector(
+                      onTap: () async {
+                        final file = await LambdaImagePicker.pickSingleImage(
+                          context,
+                          title: 'IMAGEN DE LA CHAMBA',
+                        );
+                        if (file != null) {
+                          setState(() => selectedImage = File(file.path));
+                        }
+                      },
+                      child: Container(
+                        height: 150,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: Colors.black26,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.white12),
+                          image: selectedImage != null
+                              ? DecorationImage(
+                                  image: FileImage(selectedImage!),
+                                  fit: BoxFit.cover,
+                                )
+                              : (currentImageUrl != null
+                                  ? DecorationImage(
+                                      image: NetworkImage(currentImageUrl!),
+                                      fit: BoxFit.cover,
+                                    )
+                                  : null),
+                        ),
+                        child: (selectedImage == null && currentImageUrl == null)
+                            ? const Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.add_a_photo_outlined,
+                                    color: Colors.greenAccent,
+                                    size: 32,
+                                  ),
+                                  SizedBox(height: 8),
+                                  Text(
+                                    'AÑADIR FOTO',
+                                    style: TextStyle(
+                                      color: Colors.greenAccent,
+                                      fontSize: 10,
+                                      fontFamily: 'Courier',
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : Container(
+                                alignment: Alignment.topRight,
+                                padding: const EdgeInsets.all(4),
+                                child: CircleAvatar(
+                                  backgroundColor: Colors.black54,
+                                  radius: 14,
+                                  child: IconButton(
+                                    icon: const Icon(
+                                      Icons.close,
+                                      size: 14,
+                                      color: Colors.white,
+                                    ),
+                                    onPressed: () {
+                                      setState(() {
+                                        selectedImage = null;
+                                        currentImageUrl = null;
+                                      });
+                                    },
+                                  ),
+                                ),
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -283,6 +457,7 @@ class _ChambasScreenState extends ConsumerState<ChambasScreen> {
                             description: chambaData.description,
                             type: chambaData.type,
                             salary: chambaData.salary,
+                            imageFile: selectedImage,
                           );
                     }
                     if (context.mounted) Navigator.pop(context);
@@ -357,16 +532,30 @@ class _ChambasScreenState extends ConsumerState<ChambasScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
-              Text(
-                chamba.title.toUpperCase(),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Courier',
+              if (chamba.imageUrl != null) ...[
+                const SizedBox(height: 20),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    chamba.imageUrl!,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Container(
+                        height: 200,
+                        color: Colors.black26,
+                        child: const Center(
+                          child: CircularProgressIndicator(
+                            color: Colors.greenAccent,
+                          ),
+                        ),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+                  ),
                 ),
-              ),
+              ],
               const SizedBox(height: 12),
               Row(
                 children: [
@@ -473,13 +662,18 @@ class _ChambasScreenState extends ConsumerState<ChambasScreen> {
   }
 }
 
-class _ChambaCard extends StatelessWidget {
+class _ChambaCard extends ConsumerWidget {
   final ChambaPost chamba;
   const _ChambaCard({required this.chamba});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isBusqueda = chamba.type == ChambaType.busca;
+    final currentUser = ref.watch(authProvider).valueOrNull;
+    final isInterested =
+        currentUser != null && chamba.interestedUserIds.contains(currentUser.id);
+    final isAuthor = currentUser?.id == chamba.authorId;
+    final isGuest = currentUser?.role == UserRole.TecnicoInvitado;
 
     return Card(
       color: Colors.black.withValues(alpha: 0.7),
@@ -529,18 +723,32 @@ class _ChambaCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            Text(
-              chamba.title.toUpperCase(),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                fontFamily: 'Courier',
+              if (chamba.imageUrl != null) ...[
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: Image.network(
+                    chamba.imageUrl!,
+                    height: 150,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+              Text(
+                chamba.title.toUpperCase(),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Courier',
+                ),
               ),
-            ),
             const SizedBox(height: 8),
             Text(
               chamba.description,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(color: Colors.grey, fontSize: 13),
             ),
             const Divider(color: Colors.white10, height: 24),
@@ -562,11 +770,7 @@ class _ChambaCard extends StatelessWidget {
                     ),
                   ),
                 ],
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
+                const Spacer(),
                 const Icon(
                   Icons.person_outline,
                   color: Colors.blueAccent,
@@ -584,6 +788,63 @@ class _ChambaCard extends StatelessWidget {
                 ),
               ],
             ),
+            if (!isAuthor && !isGuest) ...[
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: isInterested
+                      ? null
+                      : () async {
+                          if (currentUser == null) return;
+
+                          // 1. Update Firestore
+                          await ref
+                              .read(chambaProvider.notifier)
+                              .addInterest(chamba.id, currentUser.id);
+
+                          // 2. Notify author
+                          await NotificationService.notifyChamba(
+                            targetUserId: chamba.authorId,
+                            sourceUserId: currentUser.id,
+                            sourceUserName: currentUser.apodo ?? currentUser.nombre,
+                            chambaTitle: chamba.title,
+                            chambaId: chamba.id,
+                          );
+
+                          // 3. Open chat
+                          if (context.mounted) {
+                            Navigator.pushNamed(
+                              context,
+                              ChatConversationScreen.routeName,
+                              arguments: {
+                                'otherUserId': chamba.authorId,
+                                'otherUserName': chamba.authorName,
+                                'otherUserFotoUrl': null, // Opcional
+                              },
+                            );
+                          }
+                        },
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(
+                      color: isInterested ? Colors.white24 : Colors.greenAccent,
+                    ),
+                    foregroundColor:
+                        isInterested ? Colors.white24 : Colors.greenAccent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  child: Text(
+                    isInterested ? '✓ Interés enviado' : '⚡ Me interesa',
+                    style: const TextStyle(
+                      fontFamily: 'Courier',
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),

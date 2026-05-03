@@ -10,6 +10,7 @@ import 'package:lambda_app/providers/auth_provider.dart';
 import 'package:lambda_app/providers/notification_providers.dart';
 import 'package:lambda_app/models/user_model.dart';
 import 'package:lambda_app/screens/thread_screen.dart';
+import 'package:lambda_app/utils/image_utils.dart';
 
 class RandomScreen extends ConsumerStatefulWidget {
   static const String routeName = '/random';
@@ -38,10 +39,9 @@ class _RandomScreenState extends ConsumerState<RandomScreen> {
   }
 
   Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 75,
+    final picked = await LambdaImagePicker.pickSingleImage(
+      context,
+      title: 'ADJUNTAR IMAGEN AL BOARD',
     );
     if (picked != null) {
       setState(() {

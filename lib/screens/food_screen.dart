@@ -12,6 +12,8 @@ import 'package:lambda_app/widgets/antenna_rating.dart';
 import 'package:lambda_app/widgets/comments_section.dart';
 import 'package:lambda_app/widgets/video_section.dart';
 import 'package:lambda_app/widgets/image_zoom_gallery.dart';
+import 'package:lambda_app/providers/location_provider.dart';
+import 'package:lambda_app/utils/geo_utils.dart';
 
 class FoodScreen extends ConsumerStatefulWidget {
   static const String routeName = '/food';
@@ -25,110 +27,125 @@ class _FoodScreenState extends ConsumerState<FoodScreen> {
   bool _hasOpenedInitialPost = false;
   String? _selectedRegion;
   String? _selectedComuna;
+  final TextEditingController _searchCtrl = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final foodState = ref.watch(foodProvider);
     final currentUser = ref.watch(authProvider).valueOrNull;
+    final userPosition = ref.watch(locationProvider).valueOrNull;
     final isGuest = currentUser?.role == UserRole.TecnicoInvitado;
     final initialPostId = ModalRoute.of(context)!.settings.arguments as String?;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF111111),
-      appBar: AppBar(
-        title: const Text(
-          'Picás',
-          style: TextStyle(
-            color: Colors.orangeAccent,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        backgroundColor: Colors.black,
-        iconTheme: const IconThemeData(color: Colors.orangeAccent),
-        actions: [
-          // Filtro por Región
-          PopupMenuButton<String?>(
-            icon: Icon(
-              _selectedRegion != null
-                  ? Icons.filter_alt
-                  : Icons.filter_alt_outlined,
-              color: _selectedRegion != null
-                  ? Colors.orangeAccent
-                  : Colors.white54,
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Scaffold(
+        backgroundColor: const Color(0xFF111111),
+        appBar: AppBar(
+          title: const Text(
+            'Picás',
+            style: TextStyle(
+              color: Colors.orangeAccent,
+              fontWeight: FontWeight.bold,
             ),
-            tooltip: 'Filtrar por región',
-            color: const Color(0xFF1E1E1E),
-            onSelected: (value) => setState(() {
-              _selectedRegion = value;
-              _selectedComuna = null; // Reset comuna al cambiar región
-            }),
-            itemBuilder: (context) => [
-              const PopupMenuItem<String?>(
-                value: null,
-                child: Text(
-                  'Todas las regiones',
-                  style: TextStyle(color: Colors.white),
-                ),
-              ),
-              ...kRegionNames.map(
-                (r) => PopupMenuItem<String?>(
-                  value: r,
-                  child: Text(
-                    r,
-                    style: const TextStyle(color: Colors.white70, fontSize: 13),
-                  ),
-                ),
-              ),
-            ],
           ),
-          // Filtro por Comuna (solo si hay región seleccionada)
-          if (_selectedRegion != null)
+          backgroundColor: Colors.black,
+          iconTheme: const IconThemeData(color: Colors.orangeAccent),
+          actions: [
+            // Filtro por Región
             PopupMenuButton<String?>(
               icon: Icon(
-                _selectedComuna != null
-                    ? Icons.location_city
-                    : Icons.location_city_outlined,
-                color: _selectedComuna != null
+                _selectedRegion != null
+                    ? Icons.filter_alt
+                    : Icons.filter_alt_outlined,
+                color: _selectedRegion != null
                     ? Colors.orangeAccent
                     : Colors.white54,
-                size: 20,
               ),
-              tooltip: 'Filtrar por comuna',
+              tooltip: 'Filtrar por región',
               color: const Color(0xFF1E1E1E),
-              onSelected: (value) => setState(() => _selectedComuna = value),
+              onSelected: (value) => setState(() {
+                _selectedRegion = value;
+                _selectedComuna = null; // Reset comuna al cambiar región
+              }),
               itemBuilder: (context) => [
                 const PopupMenuItem<String?>(
                   value: null,
                   child: Text(
-                    'Todas las comunas',
+                    'Todas las regiones',
                     style: TextStyle(color: Colors.white),
                   ),
                 ),
-                ...(kChileRegions[_selectedRegion] ?? []).map(
-                  (c) => PopupMenuItem<String?>(
-                    value: c,
+                ...kRegionNames.map(
+                  (r) => PopupMenuItem<String?>(
+                    value: r,
                     child: Text(
-                      c,
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 13,
-                      ),
+                      r,
+                      style: const TextStyle(color: Colors.white70, fontSize: 13),
                     ),
                   ),
                 ),
               ],
             ),
-        ],
-      ),
-      floatingActionButton: isGuest
-          ? null
-          : FloatingActionButton(
-              onPressed: () =>
-                  Navigator.pushNamed(context, CreateFoodPostScreen.routeName),
-              backgroundColor: Colors.orangeAccent,
-              child: const Icon(Icons.add_a_photo, color: Colors.black),
-            ),
-      body: foodState.when(
+            // Filtro por Comuna (solo si hay región seleccionada)
+            if (_selectedRegion != null)
+              PopupMenuButton<String?>(
+                icon: Icon(
+                  _selectedComuna != null
+                      ? Icons.location_city
+                      : Icons.location_city_outlined,
+                  color: _selectedComuna != null
+                      ? Colors.orangeAccent
+                      : Colors.white54,
+                  size: 20,
+                ),
+                tooltip: 'Filtrar por comuna',
+                color: const Color(0xFF1E1E1E),
+                onSelected: (value) => setState(() => _selectedComuna = value),
+                itemBuilder: (context) => [
+                  const PopupMenuItem<String?>(
+                    value: null,
+                    child: Text(
+                      'Todas las comunas',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                  ...(kChileRegions[_selectedRegion] ?? []).map(
+                    (c) => PopupMenuItem<String?>(
+                      value: c,
+                      child: Text(
+                        c,
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+          ],
+        ),
+        floatingActionButton: isGuest
+            ? null
+            : FloatingActionButton(
+                onPressed: () =>
+                    Navigator.pushNamed(context, CreateFoodPostScreen.routeName),
+                backgroundColor: Colors.orangeAccent,
+                child: const Icon(Icons.add_a_photo, color: Colors.black),
+              ),
+        body: Column(
+          children: [
+            _buildSearchBar(),
+            Expanded(
+              child: foodState.when(
         data: (posts) {
           if (posts.isEmpty) {
             return const Center(
@@ -155,7 +172,8 @@ class _FoodScreenState extends ConsumerState<FoodScreen> {
             }
           }
 
-          final filteredPosts = posts.where((p) {
+          var filteredPosts = posts.where((p) {
+            // Región/Comuna Filter
             if (_selectedRegion != null &&
                 p.region != null &&
                 p.region != _selectedRegion) {
@@ -166,8 +184,45 @@ class _FoodScreenState extends ConsumerState<FoodScreen> {
                 p.comuna != _selectedComuna) {
               return false;
             }
+
+            // Search Query Filter
+            if (_searchQuery.isNotEmpty) {
+              final query = _searchQuery.toLowerCase();
+              final inTitle = p.title.toLowerCase().contains(query);
+              final inLocation = p.locationName.toLowerCase().contains(query);
+              final inDescription = p.description.toLowerCase().contains(query);
+              if (!inTitle && !inLocation && !inDescription) {
+                return false;
+              }
+            }
             return true;
           }).toList();
+
+          // GPS Sorting: Only if no filters are active and we have user position
+          if (_selectedRegion == null && _selectedComuna == null && userPosition != null) {
+            filteredPosts.sort((a, b) {
+              if (a.coordinates == null && b.coordinates == null) return 0;
+              if (a.coordinates == null) return 1;
+              if (b.coordinates == null) return -1;
+
+              final distA = haversineKm(
+                userPosition.latitude,
+                userPosition.longitude,
+                a.coordinates!.latitude,
+                a.coordinates!.longitude,
+              );
+              final distB = haversineKm(
+                userPosition.latitude,
+                userPosition.longitude,
+                b.coordinates!.latitude,
+                b.coordinates!.longitude,
+              );
+              return distA.compareTo(distB);
+            });
+          } else if (_selectedRegion == null && _selectedComuna == null) {
+            // Default sort by createdAt desc if no GPS or filters
+            filteredPosts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          }
 
           if (filteredPosts.isEmpty) {
             return Center(
@@ -390,6 +445,22 @@ class _FoodScreenState extends ConsumerState<FoodScreen> {
                                   ),
                                 ],
                               ),
+                              if (userPosition != null && post.coordinates != null) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  '📍 ${haversineKm(
+                                    userPosition.latitude,
+                                    userPosition.longitude,
+                                    post.coordinates!.latitude,
+                                    post.coordinates!.longitude,
+                                  ).toStringAsFixed(1)} km',
+                                  style: const TextStyle(
+                                    color: Colors.white24,
+                                    fontSize: 10,
+                                    fontFamily: 'monospace',
+                                  ),
+                                ),
+                              ],
                               const SizedBox(height: 8),
                             ],
                             if (post.description.isNotEmpty)
@@ -415,6 +486,75 @@ class _FoodScreenState extends ConsumerState<FoodScreen> {
         ),
         error: (err, _) => Center(
           child: Text('Error: $err', style: const TextStyle(color: Colors.red)),
+        ),
+      ),
+    ),
+  ],
+),
+),
+);
+}
+
+  Widget _buildSearchBar() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      child: Container(
+        height: 44,
+        decoration: BoxDecoration(
+          color: const Color(0xFF121212),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.1),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.4),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: TextField(
+          controller: _searchCtrl,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontFamily: 'Inter',
+          ),
+          cursorColor: Colors.orangeAccent,
+          decoration: InputDecoration(
+            hintText: 'BUSCAR PICÁ...',
+            hintStyle: TextStyle(
+              color: Colors.white.withValues(alpha: 0.25),
+              fontSize: 12,
+              fontFamily: 'Courier',
+              letterSpacing: 1.5,
+            ),
+            prefixIcon: Icon(
+              Icons.search_rounded,
+              color: Colors.orangeAccent.withValues(alpha: 0.5),
+              size: 20,
+            ),
+            suffixIcon: _searchCtrl.text.isNotEmpty
+                ? IconButton(
+                    icon: const Icon(
+                      Icons.close_rounded,
+                      color: Colors.white38,
+                      size: 18,
+                    ),
+                    onPressed: () {
+                      _searchCtrl.clear();
+                      setState(() => _searchQuery = '');
+                    },
+                  )
+                : null,
+            border: InputBorder.none,
+            contentPadding: const EdgeInsets.symmetric(vertical: 10),
+          ),
+          onChanged: (val) {
+            setState(() => _searchQuery = val);
+          },
         ),
       ),
     );

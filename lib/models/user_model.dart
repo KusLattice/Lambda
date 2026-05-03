@@ -73,6 +73,8 @@ class User {
     this.contactIds = const [],
     this.representativeIcon,
     this.isOnline = false,
+    this.statusEmoji,
+    this.customStatus,
   });
 
   final String id;
@@ -108,6 +110,8 @@ class User {
   final List<String> contactIds;
   final String? representativeIcon;
   final bool isOnline;
+  final String? statusEmoji;
+  final String? customStatus;
 
   // Un método 'copyWith' es útil para crear una copia de un usuario
   // con algunos campos modificados, sin mutar el original.
@@ -145,6 +149,8 @@ class User {
     List<String>? contactIds,
     String? representativeIcon,
     bool? isOnline,
+    String? statusEmoji,
+    String? customStatus,
   }) {
     return User(
       id: id ?? this.id,
@@ -181,6 +187,8 @@ class User {
       contactIds: contactIds ?? this.contactIds,
       representativeIcon: representativeIcon ?? this.representativeIcon,
       isOnline: isOnline ?? this.isOnline,
+      statusEmoji: statusEmoji ?? this.statusEmoji,
+      customStatus: customStatus ?? this.customStatus,
     );
   }
 
@@ -239,6 +247,8 @@ class User {
       contactIds: List<String>.from(map['contactIds'] ?? []),
       representativeIcon: map['representativeIcon'],
       isOnline: map['isOnline'] ?? false,
+      statusEmoji: map['statusEmoji'],
+      customStatus: map['customStatus'],
     );
   }
 
@@ -290,6 +300,8 @@ class User {
       'contactIds': contactIds,
       'representativeIcon': representativeIcon,
       'isOnline': isOnline,
+      'statusEmoji': statusEmoji,
+      'customStatus': customStatus,
     };
   }
 }

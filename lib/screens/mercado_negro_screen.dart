@@ -20,6 +20,14 @@ class MercadoNegroScreen extends ConsumerStatefulWidget {
 class _MercadoNegroScreenState extends ConsumerState<MercadoNegroScreen> {
   String _selectedCategory = 'Todo';
   bool _hasOpenedInitialItem = false;
+  final TextEditingController _searchCtrl = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
   final List<String> _categories = [
     'Todo',
     'Herramientas',
@@ -52,6 +60,7 @@ class _MercadoNegroScreenState extends ConsumerState<MercadoNegroScreen> {
       ),
       body: Column(
         children: [
+          _buildSearchBar(),
           _buildCategoryFilter(),
           Expanded(
             child: marketAsync.when(
@@ -63,14 +72,14 @@ class _MercadoNegroScreenState extends ConsumerState<MercadoNegroScreen> {
                 ),
               ),
               data: (items) {
-                final filteredItems = _selectedCategory == 'Todo'
-                    ? items
-                    : items
-                          .where(
-                            (item) =>
-                                item.category.displayName == _selectedCategory,
-                          )
-                          .toList();
+                final filteredItems = items.where((item) {
+                  final matchesCategory = _selectedCategory == 'Todo' ||
+                      item.category.displayName == _selectedCategory;
+                  final matchesSearch = _searchQuery.isEmpty ||
+                      item.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+                      item.description.toLowerCase().contains(_searchQuery.toLowerCase());
+                  return matchesCategory && matchesSearch;
+                }).toList();
 
                 if (filteredItems.isEmpty) {
                   return const Center(

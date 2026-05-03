@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:lambda_app/providers/auth_provider.dart';
 import 'package:lambda_app/models/user_model.dart';
+import 'package:lambda_app/utils/image_utils.dart';
 import 'dart:math';
 
 class ThreadScreen extends ConsumerStatefulWidget {
@@ -32,10 +33,9 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
   }
 
   Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 75,
+    final picked = await LambdaImagePicker.pickSingleImage(
+      context,
+      title: 'ADJUNTAR IMAGEN A LA RESPUESTA',
     );
     if (picked != null) {
       setState(() {

@@ -9,6 +9,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:lambda_app/widgets/user_contributions_list.dart';
+import 'package:lambda_app/utils/image_utils.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   static const String routeName = '/profile';
@@ -19,6 +21,26 @@ class ProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  final TextEditingController _statusController = TextEditingController();
+  
+  @override
+  void initState() {
+    super.initState();
+    // Inicializar el controlador con el estado actual si es personalizado
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final user = ref.read(authProvider).value;
+      if (user?.customStatus != null) {
+        _statusController.text = user!.customStatus!;
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _statusController.dispose();
+    super.dispose();
+  }
+
   Future<void> _showEditNicknameDialog(User user) async {
     final nicknameController = TextEditingController(text: user.apodo);
     bool isLoading = false;
@@ -315,13 +337,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Future<void> _pickAndUploadImage() async {
-    final picker = ImagePicker();
-    final XFile? image = await picker.pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 512,
-      maxHeight: 512,
-      imageQuality: 75,
-    );
+    final XFile? image = await LambdaImagePicker.pickSingleImage(context);
 
     if (image != null) {
       final messenger = ScaffoldMessenger.of(context);
@@ -420,11 +436,36 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         ? 'Ediciones ilimitadas para Admins y Super Admins.'
         : 'Solo puedes cambiar esto 3 veces. Te quedan $strFechaEdits ediciones.';
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Perfil de Usuario'),
-        backgroundColor: Colors.black,
-      ),
+    final currentTheme = ref.watch(themeProvider);
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Scaffold(
+        backgroundColor: currentTheme.background,
+        appBar: AppBar(
+          backgroundColor: currentTheme.background,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new, size: 18),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: const Text(
+            'MI PERFIL LAMBDA',
+            style: TextStyle(
+              fontFamily: 'Courier',
+              fontSize: 14,
+              letterSpacing: 2,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.qr_code_2_outlined, color: Colors.white54),
+              tooltip: 'Mi QR',
+              onPressed: () => _showQrDialog(user),
+            ),
+            const SizedBox(width: 8),
+          ],
+        ),
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: <Widget>[
@@ -473,6 +514,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             tooltip:
                 'Breve descripción que los demás usuarios verán en tu perfil.',
           ),
+          _buildStatusSelector(user, canEdit: canEdit),
           if (user.showCompanyPublicly || canEdit)
             _buildInfoTile(
               'Empresa',
@@ -676,6 +718,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ],
         ],
       ),
+      ),
     );
   }
 
@@ -771,6 +814,154 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
+  Widget _buildStatusSelector(User user, {required bool canEdit}) {
+    if (!canEdit) {
+      if (user.statusEmoji == null) return const SizedBox.shrink();
+      return _buildInfoTile(
+        'Estado actual',
+        user.statusEmoji,
+        Icons.info_outline,
+      );
+    }
+
+    final options = [
+      '🔧 En faena',
+      '🚗 En ruta',
+      '☕ Disponible',
+      '📵 Sin señal',
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 16),
+        const Text(
+          'Estado actual',
+          style: TextStyle(
+            color: Colors.greenAccent,
+            fontSize: 14,
+            fontFamily: 'Courier',
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 12),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              ...options.map((status) {
+                final isSelected = user.statusEmoji == status;
+                return GestureDetector(
+                  onTap: () {
+                    _statusController.clear();
+                    ref
+                        .read(authProvider.notifier)
+                        .updateField('statusEmoji', status);
+                    ref
+                        .read(authProvider.notifier)
+                        .updateField('customStatus', null);
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.only(right: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? Colors.greenAccent.withValues(alpha: 0.1)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: isSelected ? Colors.greenAccent : Colors.white12,
+                      ),
+                    ),
+                    child: Text(
+                      status,
+                      style: TextStyle(
+                        color: isSelected ? Colors.greenAccent : Colors.white70,
+                        fontSize: 12,
+                        fontWeight:
+                            isSelected ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                  ),
+                );
+              }),
+              GestureDetector(
+                onTap: () {
+                  _statusController.clear();
+                  ref
+                      .read(authProvider.notifier)
+                      .updateField('statusEmoji', null);
+                  ref
+                      .read(authProvider.notifier)
+                      .updateField('customStatus', null);
+                },
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: user.statusEmoji == null
+                        ? Colors.white12
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.white12),
+                  ),
+                  child: const Text(
+                    'Sin estado',
+                    style: TextStyle(color: Colors.white54, fontSize: 12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _statusController,
+          style: const TextStyle(color: Colors.white, fontSize: 13),
+          maxLength: 30,
+          decoration: InputDecoration(
+            hintText: 'Escribe un estado personalizado...',
+            hintStyle: const TextStyle(color: Colors.white24),
+            counterText: "",
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            prefixIcon: const Icon(Icons.edit_note, color: Colors.greenAccent, size: 20),
+            suffixIcon: IconButton(
+              icon: const Icon(Icons.send_rounded, color: Colors.greenAccent, size: 20),
+              onPressed: () {
+                if (_statusController.text.trim().isNotEmpty) {
+                  ref.read(authProvider.notifier).updateField('customStatus', _statusController.text.trim());
+                  ref.read(authProvider.notifier).updateField('statusEmoji', null);
+                  FocusScope.of(context).unfocus();
+                }
+              },
+            ),
+            filled: true,
+            fillColor: Colors.white.withValues(alpha: 0.05),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.white10),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.greenAccent),
+            ),
+          ),
+          onSubmitted: (val) {
+            if (val.trim().isNotEmpty) {
+              ref.read(authProvider.notifier).updateField('statusEmoji', val.trim());
+            }
+          },
+        ),
+        const SizedBox(height: 8),
+      ],
+    );
+  }
+
   Widget _buildSectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
@@ -821,7 +1012,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             subtitle: Padding(
               padding: const EdgeInsets.only(top: 2.0),
               child: Text(
-                value ?? '---',
+                (value == null || value.isEmpty) ? '' : value,
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 15,
@@ -1176,6 +1367,84 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showQrDialog(User user) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF111111),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Colors.greenAccent, width: 0.5),
+        ),
+        title: const Text(
+          'MI QR LAMBDA',
+          style: TextStyle(
+            color: Colors.greenAccent,
+            fontFamily: 'Courier',
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.greenAccent.withValues(alpha: 0.2),
+                    blurRadius: 20,
+                    spreadRadius: 5,
+                  ),
+                ],
+              ),
+              child: QrImageView(
+                data: 'lambda://profile/${user.id}',
+                version: QrVersions.auto,
+                size: 220.0,
+                backgroundColor: Colors.white,
+                eyeStyle: const QrEyeStyle(
+                  eyeShape: QrEyeShape.square,
+                  color: Colors.black,
+                ),
+                dataModuleStyle: const QrDataModuleStyle(
+                  dataModuleShape: QrDataModuleShape.square,
+                  color: Colors.black,
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              user.apodo ?? user.nombre,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            Text(
+              (user.area == null || user.area!.isEmpty) ? 'Técnico Lambda' : user.area!,
+              style: TextStyle(
+                color: Colors.greenAccent.withValues(alpha: 0.7),
+                fontSize: 12,
+                fontFamily: 'Courier',
+              ),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              'Escanea para ver mi perfil técnico',
+              style: TextStyle(color: Colors.white38, fontSize: 10),
+            ),
+          ],
+        ),
       ),
     );
   }

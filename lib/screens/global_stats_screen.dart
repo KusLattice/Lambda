@@ -34,11 +34,17 @@ class _GlobalStatsScreenState extends ConsumerState<GlobalStatsScreen> {
   final Map<String, int> _roleCounts = {};
   final Map<int, int> _peakHours = {};
   bool _isChartsLoading = true;
+  
+  // Weekly Ranking data
+  final Map<String, int> _weeklyScores = {}; // userId -> score
+  final Map<String, String> _userNames = {};  // userId -> apodo ?? nombre
+  bool _isRankingLoading = true;
 
   @override
   void initState() {
     super.initState();
     _loadHistoricalData();
+    _loadWeeklyRanking();
   }
 
   Future<void> _loadHistoricalData() async {
@@ -100,6 +106,73 @@ class _GlobalStatsScreenState extends ConsumerState<GlobalStatsScreen> {
     }
   }
 
+  Future<void> _loadWeeklyRanking() async {
+    try {
+      if (mounted) setState(() => _isRankingLoading = true);
+      
+      final weekAgo = Timestamp.fromDate(
+        DateTime.now().subtract(const Duration(days: 7))
+      );
+      
+      final collections = [
+        'lodging_tracker', 'food_tracker', 'market_items',
+        'chambas', 'random_board', 'fiber_cut_reports'
+      ];
+      
+      _weeklyScores.clear();
+      _userNames.clear();
+      
+      for (final col in collections) {
+        try {
+          final snap = await _db.collection(col)
+              .where('createdAt', isGreaterThan: weekAgo)
+              .get();
+              
+          for (var doc in snap.docs) {
+            final userId = doc.data()['userId'] as String?;
+            if (userId != null) {
+              _weeklyScores[userId] = (_weeklyScores[userId] ?? 0) + 1;
+            }
+          }
+        } catch (e) {
+          debugPrint('Error loading weekly ranking for $col: $e');
+        }
+      }
+      
+      // Si no hay actividad, detenemos aquí
+      if (_weeklyScores.isEmpty) {
+        if (mounted) setState(() => _isRankingLoading = false);
+        return;
+      }
+      
+      // Obtener nombres de los usuarios con actividad (Top 5 o más si es necesario)
+      final activeUserIds = _weeklyScores.keys.toList();
+      
+      final sortedUserIds = _weeklyScores.entries.toList()
+        ..sort((a, b) => b.value.compareTo(a.value));
+      
+      final topIds = sortedUserIds.take(10).map((e) => e.key).toList();
+      
+      if (topIds.isNotEmpty) {
+        final usersSnap = await _db.collection('users')
+            .where(FieldPath.documentId, whereIn: topIds)
+            .get();
+            
+        for (var doc in usersSnap.docs) {
+          final userData = doc.data();
+          final apodo = userData['apodo'] as String?;
+          final nombre = userData['nombre'] as String? ?? 'Sin Nombre';
+          _userNames[doc.id] = (apodo != null && apodo.isNotEmpty) ? apodo : nombre;
+        }
+      }
+      
+      if (mounted) setState(() => _isRankingLoading = false);
+    } catch (e) {
+      debugPrint('Error global ranking: $e');
+      if (mounted) setState(() => _isRankingLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final statsAsync = ref.watch(statsProvider);
@@ -124,6 +197,7 @@ class _GlobalStatsScreenState extends ConsumerState<GlobalStatsScreen> {
             onPressed: () {
               ref.invalidate(statsProvider);
               _loadHistoricalData();
+              _loadWeeklyRanking();
             },
           ),
         ],
@@ -146,7 +220,10 @@ class _GlobalStatsScreenState extends ConsumerState<GlobalStatsScreen> {
               data: (stats) => RefreshIndicator(
                 onRefresh: () async {
                   ref.invalidate(statsProvider);
-                  await _loadHistoricalData();
+                  await Future.wait([
+                    _loadHistoricalData(),
+                    _loadWeeklyRanking(),
+                  ]);
                 },
                 color: Colors.amber,
                 backgroundColor: Colors.black,
@@ -268,6 +345,9 @@ class _GlobalStatsScreenState extends ConsumerState<GlobalStatsScreen> {
                       Colors.greenAccent,
                       LaNaveScreen.routeName,
                     ),
+                    const SizedBox(height: 32),
+                    _buildSectionHeader('🏆 TOP CONTRIBUIDORES (SEMANAL)'),
+                    _buildWeeklyRankingSection(),
                     const SizedBox(height: 32),
                     _buildSectionHeader('📊 ANÁLISIS VISUAL (PRO)'),
                     if (_isChartsLoading)
@@ -511,6 +591,144 @@ class _GlobalStatsScreenState extends ConsumerState<GlobalStatsScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildWeeklyRankingSection() {
+    if (_isRankingLoading) {
+      return Container(
+        height: 100,
+        alignment: Alignment.center,
+        child: const CircularProgressIndicator(color: Colors.greenAccent),
+      );
+    }
+
+    if (_weeklyScores.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white10),
+        ),
+        child: const Center(
+          child: Text(
+            'Sin actividad registrada esta semana.',
+            style: TextStyle(color: Colors.white38, fontFamily: 'Courier'),
+          ),
+        ),
+      );
+    }
+
+    final sortedEntries = _weeklyScores.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    
+    final top5 = sortedEntries.take(5).toList();
+
+    return Column(
+      children: top5.asMap().entries.map((entry) {
+        final index = entry.key;
+        final userId = entry.value.key;
+        final score = entry.value.value;
+        final displayName = _userNames[userId] ?? 'ID: ${userId.substring(0, 5)}...';
+        
+        Color rankColor;
+        IconData rankIcon;
+        double fontSize = 14;
+
+        switch (index) {
+          case 0:
+            rankColor = Colors.amber;
+            rankIcon = Icons.emoji_events;
+            fontSize = 18;
+            break;
+          case 1:
+            rankColor = const Color(0xFFC0C0C0); // Plata
+            rankIcon = Icons.military_tech;
+            fontSize = 16;
+            break;
+          case 2:
+            rankColor = const Color(0xFFCD7F32); // Bronce
+            rankIcon = Icons.military_tech_outlined;
+            fontSize = 15;
+            break;
+          default:
+            rankColor = Colors.white54;
+            rankIcon = Icons.person_outline;
+        }
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: rankColor.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: rankColor.withValues(alpha: index < 3 ? 0.3 : 0.1),
+              width: index == 0 ? 1.5 : 1.0,
+            ),
+          ),
+          child: Row(
+            children: [
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  Icon(rankIcon, color: rankColor, size: 32),
+                  if (index > 2)
+                    Text(
+                      '${index + 1}',
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      displayName.toUpperCase(),
+                      style: TextStyle(
+                        color: rankColor,
+                        fontSize: fontSize,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Courier',
+                        letterSpacing: 1.1,
+                      ),
+                    ),
+                    const Text(
+                      'CONTRIBUIDOR ACTIVO',
+                      style: TextStyle(color: Colors.white24, fontSize: 10),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    score.toString(),
+                    style: TextStyle(
+                      color: rankColor,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Courier',
+                    ),
+                  ),
+                  const Text(
+                    'APORTES',
+                    style: TextStyle(color: Colors.white38, fontSize: 9),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      }).toList(),
     );
   }
 

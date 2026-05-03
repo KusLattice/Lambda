@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lambda_app/widgets/video_player_widget.dart';
+import 'package:lambda_app/utils/image_utils.dart';
 
 class MediaSelectorField extends StatefulWidget {
   final List<File> initialImages;
@@ -28,7 +29,6 @@ class MediaSelectorField extends StatefulWidget {
 class _MediaSelectorFieldState extends State<MediaSelectorField> {
   late List<File> _images;
   File? _video;
-  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
@@ -38,7 +38,7 @@ class _MediaSelectorFieldState extends State<MediaSelectorField> {
   }
 
   Future<void> _pickImages() async {
-    final picked = await _picker.pickMultiImage(imageQuality: 70);
+    final picked = await LambdaImagePicker.pickImages(context);
     if (picked.isNotEmpty) {
       setState(() {
         _images.addAll(picked.map((x) => File(x.path)));
@@ -54,10 +54,7 @@ class _MediaSelectorFieldState extends State<MediaSelectorField> {
   }
 
   Future<void> _pickVideo() async {
-    final picked = await _picker.pickVideo(
-      source: ImageSource.gallery,
-      maxDuration: const Duration(seconds: 10),
-    );
+    final picked = await LambdaImagePicker.pickVideo(context);
     if (picked != null) {
       setState(() {
         _video = File(picked.path);

@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:lambda_app/utils/image_utils.dart';
 import 'package:lambda_app/widgets/video_player_widget.dart';
 
 /// Sección de video reutilizable para pantallas de creación y visualización.
@@ -63,8 +64,10 @@ class _VideoSectionState extends State<VideoSection> {
   }
 
   Future<void> _pickAndUpload() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickVideo(source: ImageSource.gallery);
+    final picked = await LambdaImagePicker.pickVideo(
+      context,
+      title: 'ADJUNTAR VIDEO',
+    );
     if (picked == null) return;
     if (!mounted) return;
 

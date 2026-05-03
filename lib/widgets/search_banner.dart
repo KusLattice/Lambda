@@ -78,8 +78,21 @@ class _SearchBannerState extends ConsumerState<SearchBanner> {
                     color: Colors.white.withValues(alpha: 0.3),
                     size: 18,
                   ),
+                  suffixIcon: _searchCtrl.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(
+                            Icons.close_rounded,
+                            color: Colors.white38,
+                            size: 16,
+                          ),
+                          onPressed: () {
+                            _searchCtrl.clear();
+                            setState(() {});
+                          },
+                        )
+                      : null,
                   border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 10),
                 ),
                 onChanged: (val) => setState(() {}),
                 onSubmitted: _onSearch,

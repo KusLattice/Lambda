@@ -11,6 +11,8 @@ import 'package:lambda_app/widgets/antenna_rating.dart';
 import 'package:lambda_app/widgets/comments_section.dart';
 import 'package:lambda_app/widgets/video_section.dart';
 import 'package:lambda_app/widgets/image_zoom_gallery.dart';
+import 'package:lambda_app/providers/location_provider.dart';
+import 'package:lambda_app/utils/geo_utils.dart';
 
 class HospedajeScreen extends ConsumerStatefulWidget {
   static const String routeName = '/hospedaje';
@@ -30,6 +32,7 @@ class _HospedajeScreenState extends ConsumerState<HospedajeScreen> {
       lodgingProvider,
     ); // Assuming lodgingProvider is the correct one, or if lodgingItemsProvider is new, it needs to be imported and used. Sticking to existing provider name.
     final currentUser = ref.watch(authProvider).valueOrNull;
+    final userPosition = ref.watch(locationProvider).valueOrNull;
     final isGuest = currentUser == null || currentUser.role == UserRole.TecnicoInvitado;
     final initialPostId = ModalRoute.of(context)!.settings.arguments as String?;
 
@@ -115,13 +118,39 @@ class _HospedajeScreenState extends ConsumerState<HospedajeScreen> {
             }
           }
 
-          final filteredPosts = _selectedRegion == null
+          var filteredPosts = _selectedRegion == null
               ? posts
               : posts
                     .where(
                       (p) => p.region == null || p.region == _selectedRegion,
                     )
                     .toList();
+
+          // GPS Sorting: Only if no region filter is active and we have user position
+          if (_selectedRegion == null && userPosition != null) {
+            filteredPosts.sort((a, b) {
+              if (a.coordinates == null && b.coordinates == null) return 0;
+              if (a.coordinates == null) return 1;
+              if (b.coordinates == null) return -1;
+
+              final distA = haversineKm(
+                userPosition.latitude,
+                userPosition.longitude,
+                a.coordinates!.latitude,
+                a.coordinates!.longitude,
+              );
+              final distB = haversineKm(
+                userPosition.latitude,
+                userPosition.longitude,
+                b.coordinates!.latitude,
+                b.coordinates!.longitude,
+              );
+              return distA.compareTo(distB);
+            });
+          } else if (_selectedRegion == null) {
+            // Default sort by createdAt desc if no GPS or region filter
+            filteredPosts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          }
 
           if (filteredPosts.isEmpty) {
             return Center(
@@ -298,6 +327,22 @@ class _HospedajeScreenState extends ConsumerState<HospedajeScreen> {
                                 ),
                               ],
                             ),
+                            if (userPosition != null && post.coordinates != null) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                '📍 ${haversineKm(
+                                  userPosition.latitude,
+                                  userPosition.longitude,
+                                  post.coordinates!.latitude,
+                                  post.coordinates!.longitude,
+                                ).toStringAsFixed(1)} km',
+                                style: const TextStyle(
+                                  color: Colors.white24,
+                                  fontSize: 10,
+                                  fontFamily: 'monospace',
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ),

@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:lambda_app/utils/image_utils.dart';
 import 'package:intl/intl.dart';
 import 'package:lambda_app/models/message_model.dart';
 import 'package:lambda_app/models/user_model.dart';
@@ -177,13 +178,8 @@ class _ChatConversationScreenState
   }
 
   Future<void> _sendImage() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 75,
-    );
+    final picked = await LambdaImagePicker.pickSingleImage(context);
     if (picked == null) return;
-    if (!mounted) return;
 
     setState(() => _isSending = true);
     try {
@@ -217,13 +213,8 @@ class _ChatConversationScreenState
   }
 
   Future<void> _sendVideo() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickVideo(
-      source: ImageSource.gallery,
-      maxDuration: const Duration(minutes: 5),
-    );
+    final picked = await LambdaImagePicker.pickVideo(context);
     if (picked == null) return;
-    if (!mounted) return;
 
     setState(() => _isSending = true);
     try {

@@ -513,6 +513,23 @@ class AuthStateNotifier extends AutoDisposeAsyncNotifier<User?> {
     );
   }
 
+  Future<void> updateField(String fieldName, dynamic value) async {
+    final user = state.valueOrNull;
+    if (user == null) return;
+
+    await _firestore.collection(_usersCollection).doc(user.id).update({
+      fieldName: value,
+    });
+
+    // Actualizamos el estado local para que la UI reaccione inmediatamente.
+    // Solo manejamos los campos conocidos que pueden ser actualizados por este método genérico.
+    if (fieldName == 'statusEmoji') {
+      state = AsyncValue.data(user.copyWith(statusEmoji: value as String?));
+    } else if (fieldName == 'isVisibleOnMap') {
+      state = AsyncValue.data(user.copyWith(isVisibleOnMap: value as bool));
+    }
+  }
+
   // --- Métodos de Gestión (Admin Panel & Autenticación) ---
 
   Future<void> updatePresence({bool isOnline = true}) async {

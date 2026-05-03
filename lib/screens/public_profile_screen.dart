@@ -104,113 +104,141 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
     final isSuperAdmin = authUser?.role == UserRole.SuperAdmin;
     final isAdmin = authUser?.role == UserRole.Admin || isSuperAdmin;
 
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        title: Text(
-          _targetUser!.apodo ?? _targetUser!.nombre,
-          style: const TextStyle(color: Colors.greenAccent),
-        ),
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Scaffold(
         backgroundColor: Colors.black,
-        iconTheme: const IconThemeData(color: Colors.greenAccent),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            // Cabecera: Avatar y Nombre
-            Center(
-              child: Column(
-                children: [
-                  CircleAvatar(
-                    radius: 60,
-                    backgroundColor: Colors.grey[900],
-                    backgroundImage: _targetUser!.fotoUrl != null
-                        ? NetworkImage(_targetUser!.fotoUrl!)
-                        : null,
-                    child: _targetUser!.fotoUrl == null
-                        ? const Icon(
-                            Icons.person,
-                            size: 60,
-                            color: Colors.greenAccent,
-                          )
-                        : null,
-                  ),
-                  const SizedBox(height: 15),
-                  Text(
-                    _targetUser!.nombre,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
+        appBar: AppBar(
+          title: Text(
+            _targetUser!.apodo ?? _targetUser!.nombre,
+            style: const TextStyle(color: Colors.greenAccent),
+          ),
+          backgroundColor: Colors.black,
+          iconTheme: const IconThemeData(color: Colors.greenAccent),
+        ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              // Cabecera: Avatar y Nombre
+              Center(
+                child: Column(
+                  children: [
+                    CircleAvatar(
+                      radius: 60,
+                      backgroundColor: Colors.grey[900],
+                      backgroundImage: _targetUser!.fotoUrl != null
+                          ? NetworkImage(_targetUser!.fotoUrl!)
+                          : null,
+                      child: _targetUser!.fotoUrl == null
+                          ? const Icon(
+                              Icons.person,
+                              size: 60,
+                              color: Colors.greenAccent,
+                            )
+                          : null,
                     ),
-                  ),
-                  if (_targetUser!.apodo != null)
+                    const SizedBox(height: 15),
                     Text(
-                      '@${_targetUser!.apodo}',
+                      _targetUser!.nombre,
                       style: const TextStyle(
-                        color: Colors.greenAccent,
-                        fontSize: 16,
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  const SizedBox(height: 10),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.greenAccent.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: Colors.greenAccent.withValues(alpha: 0.5),
-                      ),
-                    ),
-                    child: Text(
-                      _targetUser!.role.displayName,
-                      style: const TextStyle(
-                        color: Colors.greenAccent,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.remove_red_eye,
-                        color: Colors.white38,
-                        size: 14,
-                      ),
-                      const SizedBox(width: 5),
+                    if (_targetUser!.apodo != null)
                       Text(
-                        '${_targetUser!.visitCount} visitas',
+                        '@${_targetUser!.apodo}',
                         style: const TextStyle(
-                          color: Colors.white38,
-                          fontSize: 12,
+                          color: Colors.greenAccent,
+                          fontSize: 16,
+                        ),
+                      ),
+                    if (_targetUser!.customStatus != null &&
+                        _targetUser!.customStatus!.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        _targetUser!.customStatus!,
+                        style: const TextStyle(
+                          color: Colors.greenAccent,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w400,
+                          fontStyle: FontStyle.italic,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ] else if (_targetUser!.statusEmoji != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        _targetUser!.statusEmoji!,
+                        style: const TextStyle(
+                          color: Colors.greenAccent,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                          letterSpacing: 0.5,
                         ),
                       ),
                     ],
-                  ),
-                ],
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.greenAccent.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: Colors.greenAccent.withValues(alpha: 0.5),
+                        ),
+                      ),
+                      child: Text(
+                        _targetUser!.role.displayName,
+                        style: const TextStyle(
+                          color: Colors.greenAccent,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.remove_red_eye,
+                          color: Colors.white38,
+                          size: 14,
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          '${_targetUser!.visitCount} visitas',
+                          style: const TextStyle(
+                            color: Colors.white38,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 30),
+              const SizedBox(height: 30),
 
-            // Acciones de Red
-            if (authUser?.id != widget.userId) _buildNetworkActions(),
+              // Acciones de Red
+              if (authUser?.id != widget.userId) _buildNetworkActions(),
 
-            const SizedBox(height: 30),
+              const SizedBox(height: 30),
 
-            // Información Pública
-            _buildInfoSection(isAdmin),
+              // Información Pública
+              _buildInfoSection(isAdmin),
 
-            const SizedBox(height: 30),
+              const SizedBox(height: 30),
 
-            // TELEMETRÍA (Solo SuperAdmin)
-            if (isSuperAdmin) _buildTelemetrySection(),
-          ],
+              // TELEMETRÍA (Solo SuperAdmin)
+              if (isSuperAdmin) _buildTelemetrySection(),
+            ],
+          ),
         ),
       ),
     );
@@ -295,13 +323,17 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
             _buildInfoItem(
               Icons.business,
               'Empresa',
-              _targetUser!.empresa ?? 'N/A',
+              (_targetUser!.empresa == null || _targetUser!.empresa!.isEmpty)
+                  ? ''
+                  : _targetUser!.empresa!,
             ),
           if (_targetUser!.showWorkAreaPublicly || isAdmin)
             _buildInfoItem(
               Icons.work_outline,
               'Área',
-              _targetUser!.area ?? 'N/A',
+              (_targetUser!.area == null || _targetUser!.area!.isEmpty)
+                  ? ''
+                  : _targetUser!.area!,
             ),
           _buildInfoItem(
             Icons.calendar_today,
