@@ -101,9 +101,7 @@ class _MainDashboardState extends ConsumerState<MainDashboard>
   }
 
   void _showSecretAccessDialog(BuildContext context, User user) {
-    if (user.role == UserRole.SuperAdmin ||
-        user.role == UserRole.Admin ||
-        user.canAccessVaultLambda) {
+    if (user.isAdmin || user.canAccessVaultLambda) {
       Navigator.pushNamed(context, TipsHacksScreen.routeName);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -376,8 +374,7 @@ class _MainDashboardState extends ConsumerState<MainDashboard>
                         ? const CompassModule()
                         : InkWell(
                           onTap: () {
-                            if (moduleConfig.routeName == '/fiber-cut' &&
-                                user.role == UserRole.TecnicoInvitado) {
+                            if (moduleConfig.routeName == '/fiber-cut' && !user.isVerified) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   backgroundColor: Colors.redAccent,

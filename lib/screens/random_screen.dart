@@ -462,9 +462,7 @@ class _RandomScreenState extends ConsumerState<RandomScreen> {
   Widget build(BuildContext context) {
     final userAsync = ref.watch(authProvider);
     final currentUser = userAsync.valueOrNull;
-    final isAdmin =
-        currentUser?.role == UserRole.Admin ||
-        currentUser?.role == UserRole.SuperAdmin;
+    final isAdmin = currentUser?.isAdmin ?? false;
 
     return Scaffold(
       backgroundColor: const Color(0xFF1D1F21),

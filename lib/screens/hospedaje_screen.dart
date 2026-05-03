@@ -259,8 +259,7 @@ class _HospedajeScreenState extends ConsumerState<HospedajeScreen> {
                                       },
                                     ),
                                   if (post.userId == currentUser.id ||
-                                      currentUser.role == UserRole.Admin ||
-                                      currentUser.role == UserRole.SuperAdmin)
+                                      currentUser.isAdmin)
                                     IconButton(
                                       icon: const Icon(
                                         Icons.delete_outline,

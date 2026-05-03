@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:lambda_app/models/contribution_item.dart';
 import 'package:lambda_app/models/user_model.dart';
 import 'package:lambda_app/config/modules_config.dart';
+import 'package:lambda_app/config/firestore_collections.dart';
 
 /// Servicio que agrega los aportes de un usuario desde todas las colecciones
 /// de Firestore. Usa [Future.wait] para consultas en paralelo, evitando
@@ -77,7 +78,7 @@ class MisAportesService {
   Future<List<ContributionItem>> _fetchFoodPosts(String userId) async {
     try {
       final snap = await _db
-          .collection('foodPosts')
+          .collection(FC.foodTracker)
           .where('userId', isEqualTo: userId)
           .get();
       return snap.docs.map((doc) {
@@ -100,7 +101,7 @@ class MisAportesService {
   Future<List<ContributionItem>> _fetchLodgingPosts(String userId) async {
     try {
       final snap = await _db
-          .collection('lodgingPosts')
+          .collection(FC.lodgingTracker)
           .where('userId', isEqualTo: userId)
           .get();
       return snap.docs.map((doc) {
@@ -121,8 +122,8 @@ class MisAportesService {
   Future<List<ContributionItem>> _fetchMarketItems(String userId) async {
     try {
       final snap = await _db
-          .collection('marketItems')
-          .where('sellerId', isEqualTo: userId)
+          .collection(FC.marketItems)
+          .where('authorId', isEqualTo: userId)
           .get();
       return snap.docs.map((doc) {
         final data = doc.data();
@@ -142,7 +143,7 @@ class MisAportesService {
   Future<List<ContributionItem>> _fetchSecretHacks(String userId) async {
     try {
       final snap = await _db
-          .collection('secrets')
+          .collection(FC.hacksVault)
           .where('userId', isEqualTo: userId)
           .get();
       return snap.docs.map((doc) {
@@ -163,7 +164,7 @@ class MisAportesService {
   Future<List<ContributionItem>> _fetchNavePosts(String userId) async {
     try {
       final snap = await _db
-          .collection('navePosts')
+          .collection(FC.naveVault)
           .where('authorId', isEqualTo: userId)
           .get();
       return snap.docs.map((doc) {
@@ -184,7 +185,7 @@ class MisAportesService {
   Future<List<ContributionItem>> _fetchFiberCuts(String userId) async {
     try {
       final snap = await _db
-          .collection('fiberCutReports')
+          .collection(FC.fiberCutReports)
           .where('reporterId', isEqualTo: userId)
           .get();
       return snap.docs.map((doc) {
@@ -210,7 +211,7 @@ class MisAportesService {
   Future<List<ContributionItem>> _fetchChambas(String userId) async {
     try {
       final snap = await _db
-          .collection('chambas')
+          .collection(FC.chambas)
           .where('authorId', isEqualTo: userId)
           .get();
       return snap.docs.map((doc) {

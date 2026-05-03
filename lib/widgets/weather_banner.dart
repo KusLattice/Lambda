@@ -90,25 +90,31 @@ class _WeatherBannerState extends ConsumerState<WeatherBanner> {
         });
       }
 
-      // 3. Llamar a Google Air Quality API
-      final urlAqi = Uri.parse(
-        'https://airquality.googleapis.com/v1/currentConditions:lookup?key=${AppConfig.mapsApiKey}',
-      );
-      final aqiRes = await http
-          .post(
-            urlAqi,
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({
-              'location': {'latitude': lat, 'longitude': lon},
-            }),
-          )
-          .timeout(const Duration(seconds: 15));
-
+      // 3. Llamar a Google Air Quality API (Solo si hay key)
       int? aqiValue;
-      if (aqiRes.statusCode == 200) {
-        final aqiJson = jsonDecode(aqiRes.body);
-        if (aqiJson['indexes'] != null && aqiJson['indexes'].isNotEmpty) {
-          aqiValue = aqiJson['indexes'][0]['aqi'];
+      if (AppConfig.hasMapsKey) {
+        try {
+          final urlAqi = Uri.parse(
+            'https://airquality.googleapis.com/v1/currentConditions:lookup?key=${AppConfig.mapsApiKey}',
+          );
+          final aqiRes = await http
+              .post(
+                urlAqi,
+                headers: {'Content-Type': 'application/json'},
+                body: jsonEncode({
+                  'location': {'latitude': lat, 'longitude': lon},
+                }),
+              )
+              .timeout(const Duration(seconds: 15));
+
+          if (aqiRes.statusCode == 200) {
+            final aqiJson = jsonDecode(aqiRes.body);
+            if (aqiJson['indexes'] != null && aqiJson['indexes'].isNotEmpty) {
+              aqiValue = aqiJson['indexes'][0]['aqi'];
+            }
+          }
+        } catch (e) {
+          debugPrint('AQI Error: $e');
         }
       }
 

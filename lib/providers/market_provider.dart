@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lambda_app/models/market_model.dart';
 import 'package:lambda_app/providers/auth_provider.dart';
+import 'package:lambda_app/services/storage_upload_service.dart';
+import 'package:lambda_app/config/firestore_collections.dart';
 
 final marketItemsProvider = StreamProvider.autoDispose<List<MarketItem>>((ref) {
   final firestore = ref.watch(firestoreProvider);
@@ -32,26 +34,14 @@ class MarketNotifier extends AutoDisposeAsyncNotifier<void> {
   }) async {
     state = const AsyncValue.loading();
     try {
-      final List<String> imageUrls = [];
-      final List<String> videoUrls = [];
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-
       // Subir imágenes
-      for (int i = 0; i < imageFiles.length; i++) {
-        final ref = FirebaseStorage.instance.ref().child(
-          'market_media/$timestamp/img_$i.jpg',
-        );
-        await ref.putFile(imageFiles[i]);
-        imageUrls.add(await ref.getDownloadURL());
-      }
+      final imageUrls = await StorageUploadService.uploadImages(imageFiles, 'market_media');
 
       // Subir video
+      final List<String> videoUrls = [];
       if (videoFile != null) {
-        final ref = FirebaseStorage.instance.ref().child(
-          'market_media/$timestamp/video.mp4',
-        );
-        await ref.putFile(videoFile);
-        videoUrls.add(await ref.getDownloadURL());
+        final videoUrl = await StorageUploadService.uploadVideo(videoFile, 'market_media');
+        if (videoUrl != null) videoUrls.add(videoUrl);
       }
 
       final itemWithMedia = item.copyWith(
@@ -60,7 +50,7 @@ class MarketNotifier extends AutoDisposeAsyncNotifier<void> {
         createdAt: DateTime.now(),
       );
 
-      await _firestore.collection('market_items').add(itemWithMedia.toMap());
+      await _firestore.collection(FC.marketItems).add(itemWithMedia.toMap());
       state = const AsyncValue.data(null);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -76,15 +66,10 @@ class MarketNotifier extends AutoDisposeAsyncNotifier<void> {
     state = const AsyncValue.loading();
     try {
       // Borrar de Firestore
-      await _firestore.collection('market_items').doc(itemId).delete();
+      await _firestore.collection(FC.marketItems).doc(itemId).delete();
 
       // Borrar de Storage
-      final allMedia = [...imageUrls, ...videoUrls];
-      for (final url in allMedia) {
-        try {
-          await FirebaseStorage.instance.refFromURL(url).delete();
-        } catch (_) {}
-      }
+      await StorageUploadService.deleteUrls([...imageUrls, ...videoUrls]);
 
       state = const AsyncValue.data(null);
     } catch (e, st) {
@@ -96,7 +81,7 @@ class MarketNotifier extends AutoDisposeAsyncNotifier<void> {
   Future<void> toggleSoldStatus(String itemId, bool isSold) async {
     state = const AsyncValue.loading();
     try {
-      await _firestore.collection('market_items').doc(itemId).update({
+      await _firestore.collection(FC.marketItems).doc(itemId).update({
         'isSold': isSold,
       });
       state = const AsyncValue.data(null);
@@ -118,36 +103,19 @@ class MarketNotifier extends AutoDisposeAsyncNotifier<void> {
     try {
       List<String> finalImageUrls = List.from(existingImageUrls);
       List<String> finalVideoUrls = List.from(existingVideoUrls);
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
 
       if (imageFiles != null && imageFiles.isNotEmpty) {
-        for (final url in existingImageUrls) {
-          try {
-            await FirebaseStorage.instance.refFromURL(url).delete();
-          } catch (_) {}
-        }
+        await StorageUploadService.deleteUrls(existingImageUrls);
         finalImageUrls.clear();
-        for (int i = 0; i < imageFiles.length; i++) {
-          final ref = FirebaseStorage.instance.ref().child(
-            'market_media/$timestamp/img_$i.jpg',
-          );
-          await ref.putFile(imageFiles[i]);
-          finalImageUrls.add(await ref.getDownloadURL());
-        }
+        final newUrls = await StorageUploadService.uploadImages(imageFiles, 'market_media');
+        finalImageUrls.addAll(newUrls);
       }
 
       if (videoFile != null) {
-        for (final url in existingVideoUrls) {
-          try {
-            await FirebaseStorage.instance.refFromURL(url).delete();
-          } catch (_) {}
-        }
+        await StorageUploadService.deleteUrls(existingVideoUrls);
         finalVideoUrls.clear();
-        final ref = FirebaseStorage.instance.ref().child(
-          'market_media/$timestamp/video.mp4',
-        );
-        await ref.putFile(videoFile);
-        finalVideoUrls.add(await ref.getDownloadURL());
+        final videoUrl = await StorageUploadService.uploadVideo(videoFile, 'market_media');
+        if (videoUrl != null) finalVideoUrls.add(videoUrl);
       }
 
       final updateData = {
@@ -156,7 +124,7 @@ class MarketNotifier extends AutoDisposeAsyncNotifier<void> {
         'videoUrls': finalVideoUrls,
       };
 
-      await _firestore.collection('market_items').doc(id).update(updateData);
+      await _firestore.collection(FC.marketItems).doc(id).update(updateData);
       state = const AsyncValue.data(null);
     } catch (e, st) {
       state = AsyncValue.error(e, st);

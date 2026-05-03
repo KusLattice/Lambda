@@ -4,13 +4,14 @@ import 'package:lambda_app/models/admin_request_model.dart';
 import 'package:lambda_app/models/user_model.dart';
 import 'package:lambda_app/models/message_model.dart';
 import 'package:lambda_app/services/notification_service.dart';
-import 'package:uuid/uuid.dart';
+import 'package:lambda_app/config/firestore_collections.dart';
+
 
 final adminServiceProvider = Provider((ref) => AdminService());
 
 class AdminService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
-  final _uuid = const Uuid();
+
 
   /// Envía una nueva solicitud de un usuario a los admins.
   Future<void> submitRequest({
@@ -20,7 +21,8 @@ class AdminService {
     required String subject,
     required String body,
   }) async {
-    final requestId = _uuid.v4();
+    final docRef = _db.collection(FC.adminRequests).doc();
+    final requestId = docRef.id;
 
     final request = AdminRequest(
       id: requestId,
@@ -32,13 +34,13 @@ class AdminService {
       createdAt: DateTime.now(),
     );
 
-    await _db.collection('admin_requests').doc(requestId).set(request.toMap());
+    await docRef.set(request.toMap());
   }
 
   /// Stream de solicitudes para el Panel de Admin.
   Stream<List<AdminRequest>> getRequestsStream() {
     return _db
-        .collection('admin_requests')
+        .collection(FC.adminRequests)
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) {
@@ -54,7 +56,7 @@ class AdminService {
     String adminId,
     String adminName,
   ) async {
-    await _db.collection('admin_requests').doc(requestId).update({
+    await _db.collection(FC.adminRequests).doc(requestId).update({
       'attendedBy': adminId,
       'attendedByName': adminName,
     });
@@ -62,7 +64,7 @@ class AdminService {
 
   /// Libera el tema si el admin lo cierra sin resolver.
   Future<void> releaseRequest(String requestId) async {
-    await _db.collection('admin_requests').doc(requestId).update({
+    await _db.collection(FC.adminRequests).doc(requestId).update({
       'attendedBy': null,
       'attendedByName': null,
     });
@@ -78,11 +80,12 @@ class AdminService {
     final batch = _db.batch();
 
     // 1. Marcar solicitud como resuelta
-    final requestRef = _db.collection('admin_requests').doc(request.id);
+    final requestRef = _db.collection(FC.adminRequests).doc(request.id);
     batch.update(requestRef, {'isResolved': true});
 
     // 2. Crear mensaje formal para el usuario (Correo λ)
-    final messageId = _uuid.v4();
+    final msgRef = _db.collection(FC.messages).doc();
+    final messageId = msgRef.id;
     final message = Message(
       id: messageId,
       senderId: 'system_admin',
@@ -97,7 +100,6 @@ class AdminService {
       ownerId: request.senderId,
     );
 
-    final msgRef = _db.collection('messages').doc(messageId);
     batch.set(msgRef, message.toMap());
 
     await batch.commit();
@@ -122,7 +124,7 @@ class AdminService {
     final batch = _db.batch();
 
     // 1. Marcar solicitud como resuelta
-    final requestRef = _db.collection('admin_requests').doc(request.id);
+    final requestRef = _db.collection(FC.adminRequests).doc(request.id);
     batch.update(requestRef, {
       'isResolved': true,
       'attendedBy': adminId,
@@ -131,12 +133,13 @@ class AdminService {
 
     // 2. Si aprueba, subir rango al usuario
     if (approve) {
-      final userRef = _db.collection('users').doc(request.senderId);
+      final userRef = _db.collection(FC.users).doc(request.senderId);
       batch.update(userRef, {'role': UserRole.TecnicoVerificado.name});
     }
 
     // 3. Crear mensaje formal (Correo λ)
-    final messageId = _uuid.v4();
+    final msgRef = _db.collection(FC.messages).doc();
+    final messageId = msgRef.id;
     final subject = approve
         ? 'SOLICITUD DE ASCENSO APROBADA'
         : 'SOLICITUD DE ASCENSO DENEGADA';
@@ -160,7 +163,6 @@ class AdminService {
       ownerId: request.senderId,
     );
 
-    final msgRef = _db.collection('messages').doc(messageId);
     batch.set(msgRef, message.toMap());
 
     await batch.commit();
@@ -184,7 +186,7 @@ class AdminService {
     // NOTA: Firestore no tiene búsqueda Full-Text. 
     // Filtramos en memoria sobre los últimos 1000 mensajes para auditoría rápida.
     final snapshot = await _db
-        .collection('messages')
+        .collection(FC.messages)
         .orderBy('timestamp', descending: true)
         .limit(1000)
         .get();

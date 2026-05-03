@@ -202,8 +202,8 @@ class _LaNaveScreenState extends ConsumerState<LaNaveScreen>
 
   Widget _buildPostCard(NavePost post, User? currentUser) {
     final isOwner = post.authorId == currentUser?.id;
-    final isSuperAdmin = currentUser?.role == UserRole.SuperAdmin;
-    final isAdmin = currentUser?.role == UserRole.Admin || isSuperAdmin;
+    final isSuperAdmin = currentUser?.isSuperAdmin ?? false;
+    final isAdmin = currentUser?.isAdmin ?? false;
 
     final canEdit = isOwner || isSuperAdmin;
     final canDelete = isOwner || isAdmin;

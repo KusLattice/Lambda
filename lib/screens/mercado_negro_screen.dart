@@ -134,6 +134,68 @@ class _MercadoNegroScreenState extends ConsumerState<MercadoNegroScreen> {
     );
   }
 
+  Widget _buildSearchBar() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      child: Container(
+        height: 44,
+        decoration: BoxDecoration(
+          color: const Color(0xFF121212),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: Colors.white.withOpacity(0.1),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.4),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: TextField(
+          controller: _searchCtrl,
+          onChanged: (val) => setState(() => _searchQuery = val),
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+          cursorColor: Colors.greenAccent,
+          decoration: InputDecoration(
+            hintText: 'Buscar en Mercado Negro...',
+            hintStyle: TextStyle(
+              color: Colors.white.withOpacity(0.3),
+              fontSize: 14,
+            ),
+            prefixIcon: const Icon(
+              Icons.search,
+              color: Colors.greenAccent,
+              size: 18,
+            ),
+            suffixIcon: _searchQuery.isNotEmpty
+                ? IconButton(
+                    icon: Icon(
+                      Icons.close,
+                      color: Colors.white.withOpacity(0.5),
+                      size: 16,
+                    ),
+                    onPressed: () {
+                      _searchCtrl.clear();
+                      setState(() => _searchQuery = '');
+                    },
+                  )
+                : null,
+            border: InputBorder.none,
+            contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+          ),
+          textAlignVertical: TextAlignVertical.center,
+        ),
+      ),
+    );
+  }
+
   Widget _buildCategoryFilter() {
     return Container(
       height: 60,
@@ -466,7 +528,7 @@ class _MercadoNegroScreenState extends ConsumerState<MercadoNegroScreen> {
               CommentsSection(
                 postId: item.id,
                 collectionName: 'market_items',
-                postOwnerId: item.sellerId,
+                postOwnerId: item.authorId,
                 postTitle: item.title,
                 postRouteName: MercadoNegroScreen.routeName,
                 accentColor: Colors.greenAccent,
@@ -483,7 +545,7 @@ class _MercadoNegroScreenState extends ConsumerState<MercadoNegroScreen> {
     final user = ref.watch(authProvider).valueOrNull;
     if (user == null) return const SizedBox.shrink();
 
-    final isOwner = item.sellerId == user.id;
+    final isOwner = item.authorId == user.id;
     final isSuperAdmin = user.role == UserRole.SuperAdmin;
     final isAdmin = user.role == UserRole.SuperAdmin;
 

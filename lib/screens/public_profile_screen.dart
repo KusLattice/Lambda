@@ -101,8 +101,8 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
     }
 
     final authUser = ref.watch(authProvider).valueOrNull;
-    final isSuperAdmin = authUser?.role == UserRole.SuperAdmin;
-    final isAdmin = authUser?.role == UserRole.Admin || isSuperAdmin;
+    final isSuperAdmin = authUser?.isSuperAdmin ?? false;
+    final isAdmin = authUser?.isAdmin ?? false;
 
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),

@@ -1,11 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:lambda_app/models/notification_model.dart';
 
+import 'package:lambda_app/config/firestore_collections.dart';
+
 /// Servicio centralizado para crear notificaciones.
 /// Asegura consistencia en la estructura de datos y evita duplicación.
 class NotificationService {
   static final _collection = FirebaseFirestore.instance.collection(
-    'notifications',
+    FC.notifications,
   );
 
   /// Notifica al destinatario de un nuevo mensaje de correo.
@@ -98,7 +100,7 @@ class NotificationService {
       targetUserId: targetUserId,
       sourceUserId: sourceUserId,
       sourceUserName: sourceUserName,
-      type: NotificationType.comment, // Reutilizando tipo comentario
+      type: NotificationType.chamba,
       title: 'está interesado en tu chamba',
       body: chambaTitle,
       routeName: '/chambas',

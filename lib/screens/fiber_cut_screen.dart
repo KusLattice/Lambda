@@ -138,8 +138,8 @@ class _FiberCutCard extends ConsumerWidget {
     final currentUser = ref.watch(authProvider).valueOrNull;
 
     final isCreator = currentUser?.id == report.reporterId;
-    final isSuperAdmin = currentUser?.role == UserRole.SuperAdmin;
-    final isAdmin = currentUser?.role == UserRole.Admin;
+    final isSuperAdmin = currentUser?.isSuperAdmin ?? false;
+    final isAdmin = currentUser?.isAdmin ?? false;
 
     final canEdit = isCreator || isSuperAdmin;
     final canDelete = isCreator || isAdmin || isSuperAdmin;

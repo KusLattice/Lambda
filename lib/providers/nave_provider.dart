@@ -1,14 +1,16 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lambda_app/models/nave_post.dart';
+import 'package:lambda_app/services/storage_upload_service.dart';
+import 'package:lambda_app/config/firestore_collections.dart';
 
 final navePostsProvider = StreamProvider.autoDispose
     .family<List<NavePost>, String>((ref, section) {
       return FirebaseFirestore.instance
-          .collection('nave_vault')
+          .collection(FC.naveVault)
           .where('section', isEqualTo: section)
           .orderBy('createdAt', descending: true)
           .snapshots()
@@ -23,8 +25,7 @@ final naveProvider = Provider<NaveService>((ref) => NaveService());
 
 class NaveService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseStorage _storage = FirebaseStorage.instance;
-  final String _collection = 'nave_vault';
+  final String _collection = FC.naveVault;
 
   Future<void> addPost({
     required NavePost post,
@@ -32,23 +33,14 @@ class NaveService {
     File? videoFile,
   }) async {
     final docRef = _firestore.collection(_collection).doc();
-    final List<String> uploadedImages = [];
-    final List<String> uploadedVideos = [];
-
     // Subir imágenes
-    for (int i = 0; i < imageFiles.length; i++) {
-      final ref = _storage.ref().child('nave_media/${docRef.id}_img_$i.jpg');
-      await ref.putFile(imageFiles[i]);
-      final url = await ref.getDownloadURL();
-      uploadedImages.add(url);
-    }
+    final uploadedImages = await StorageUploadService.uploadImages(imageFiles, 'nave_media');
 
     // Subir video
+    final List<String> uploadedVideos = [];
     if (videoFile != null) {
-      final ref = _storage.ref().child('nave_media/${docRef.id}_vid.mp4');
-      await ref.putFile(videoFile);
-      final url = await ref.getDownloadURL();
-      uploadedVideos.add(url);
+      final videoUrl = await StorageUploadService.uploadVideo(videoFile, 'nave_media');
+      if (videoUrl != null) uploadedVideos.add(videoUrl);
     }
 
     final newPost = post.copyWith(
@@ -64,15 +56,7 @@ class NaveService {
     List<String> imageUrls,
     List<String> videoUrls,
   ) async {
-    final allUrls = [...imageUrls, ...videoUrls];
-    for (String url in allUrls) {
-      try {
-        final ref = _storage.refFromURL(url);
-        await ref.delete();
-      } catch (e) {
-        debugPrint('nave_provider: Error eliminando archivo ($url): $e');
-      }
-    }
+    await StorageUploadService.deleteUrls([...imageUrls, ...videoUrls]);
     await _firestore.collection(_collection).doc(id).delete();
   }
 
@@ -92,42 +76,18 @@ class NaveService {
       // pero por ahora para no complicar la UI de edición, asumimos reemplazo o las que vengan nuevas).
       // NOTA: Para ser consistentes con FiberCut, si imageFiles no es null, reemplazamos.
       if (imageFiles != null) {
-        // Borrar viejas
-        for (final url in finalImageUrls) {
-          try {
-            await _storage.refFromURL(url).delete();
-          } catch (_) {}
-        }
+        await StorageUploadService.deleteUrls(finalImageUrls);
         finalImageUrls.clear();
-
-        // Subir nuevas
-        for (int i = 0; i < imageFiles.length; i++) {
-          final ref = _storage.ref().child(
-            'nave_media/${id}_img_${DateTime.now().millisecondsSinceEpoch}_$i.jpg',
-          );
-          await ref.putFile(imageFiles[i]);
-          final url = await ref.getDownloadURL();
-          finalImageUrls.add(url);
-        }
+        final newUrls = await StorageUploadService.uploadImages(imageFiles, 'nave_media');
+        finalImageUrls.addAll(newUrls);
       }
 
       // Manejo de video
       if (videoFile != null) {
-        // Borrar viejo si existe
-        for (final url in finalVideoUrls) {
-          try {
-            await _storage.refFromURL(url).delete();
-          } catch (_) {}
-        }
+        await StorageUploadService.deleteUrls(finalVideoUrls);
         finalVideoUrls.clear();
-
-        // Subir nuevo
-        final ref = _storage.ref().child(
-          'nave_media/${id}_vid_${DateTime.now().millisecondsSinceEpoch}.mp4',
-        );
-        await ref.putFile(videoFile);
-        final url = await ref.getDownloadURL();
-        finalVideoUrls.add(url);
+        final videoUrl = await StorageUploadService.uploadVideo(videoFile, 'nave_media');
+        if (videoUrl != null) finalVideoUrls.add(videoUrl);
       }
 
       final Map<String, dynamic> updateData = Map.from(data);

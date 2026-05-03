@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:lambda_app/config/firestore_collections.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:rss_dart/dart_rss.dart';
@@ -236,7 +237,7 @@ class RssNewsService {
 
     try {
       final snapshots = FirebaseFirestore.instance
-          .collection('telecom_news')
+          .collection(FC.telecomNews)
           .orderBy('publishedAt', descending: true)
           .limit(30)
           .snapshots();
@@ -268,7 +269,7 @@ class RssNewsService {
     final batch = FirebaseFirestore.instance.batch();
     for (final item in _fallbackNews) {
       final ref = FirebaseFirestore.instance
-          .collection('telecom_news')
+          .collection(FC.telecomNews)
           .doc(item.id);
       batch.set(ref, item.toMap());
     }
@@ -441,7 +442,7 @@ class RssNewsService {
       final batch = FirebaseFirestore.instance.batch();
       for (final item in items) {
         final ref = FirebaseFirestore.instance
-            .collection('telecom_news')
+            .collection(FC.telecomNews)
             .doc(item.id);
         batch.set(ref, item.toMap(), SetOptions(merge: true));
       }
@@ -454,7 +455,7 @@ class RssNewsService {
   /// Admin: borrar una noticia por ID.
   Future<void> deleteNewsItem(String itemId) async {
     await FirebaseFirestore.instance
-        .collection('telecom_news')
+        .collection(FC.telecomNews)
         .doc(itemId)
         .delete();
   }

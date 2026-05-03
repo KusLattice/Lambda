@@ -24,7 +24,7 @@ class GeocodingService {
 
   /// Obtiene lat/lng para una dirección o lugar. Retorna null si no hay resultados o falla.
   Future<GeocodingResult?> geocode(String address) async {
-    if (address.trim().isEmpty) return null;
+    if (address.trim().isEmpty || apiKey.isEmpty) return null;
 
     final uri = Uri.https('maps.googleapis.com', '/maps/api/geocode/json', {
       'address': address.trim(),
@@ -69,6 +69,7 @@ class GeocodingService {
 
   /// Obtiene la dirección aproximada dada una coordenada (Reverse Geocoding).
   Future<GeocodingResult?> reverseGeocode(double lat, double lng) async {
+    if (apiKey.isEmpty) return null;
     final uri = Uri.https('maps.googleapis.com', '/maps/api/geocode/json', {
       'latlng': '$lat,$lng',
       'key': apiKey,

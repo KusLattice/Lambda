@@ -367,13 +367,9 @@ class _CommentTileState extends ConsumerState<_CommentTile>
   }
 
   bool get _canDelete {
-    if (widget.currentUser == null) return false;
-    if (widget.comment.authorId == widget.currentUser!.id) return true;
-    if (widget.currentUser!.role == UserRole.Admin ||
-        widget.currentUser!.role == UserRole.SuperAdmin) {
-      return true;
-    }
-    return false;
+    final user = widget.currentUser;
+    if (user == null) return false;
+    return user.id == widget.comment.authorId || user.isAdmin;
   }
 
   String _formatDate(DateTime dt) {

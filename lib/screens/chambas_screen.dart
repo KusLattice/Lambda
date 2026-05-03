@@ -80,7 +80,10 @@ class _ChambasScreenState extends ConsumerState<ChambasScreen> {
                         return const Center(
                           child: Text(
                             'No se encontraron chambas.',
-                            style: TextStyle(color: Colors.grey, fontFamily: 'Courier'),
+                            style: TextStyle(
+                              color: Colors.grey,
+                              fontFamily: 'Courier',
+                            ),
                           ),
                         );
                       }
@@ -111,7 +114,9 @@ class _ChambasScreenState extends ConsumerState<ChambasScreen> {
                       );
                     },
                     loading: () => const Center(
-                      child: CircularProgressIndicator(color: Colors.greenAccent),
+                      child: CircularProgressIndicator(
+                        color: Colors.greenAccent,
+                      ),
                     ),
                     error: (e, _) => Center(
                       child: Text(
@@ -218,7 +223,7 @@ class _ChambasScreenState extends ConsumerState<ChambasScreen> {
               try {
                 await ref
                     .read(chambaProvider.notifier) // Changed to chambaProvider
-                    .deleteChamba(chamba.id);
+                    .deleteChamba(chamba);
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Chamba eliminada.')),
@@ -252,8 +257,7 @@ class _ChambasScreenState extends ConsumerState<ChambasScreen> {
       text: initialChamba?.description ?? '',
     );
     final salaryCtrl = TextEditingController(text: initialChamba?.salary ?? '');
-    ChambaType selectedType =
-        initialChamba?.type ?? ChambaType.ofrece;
+    ChambaType selectedType = initialChamba?.type ?? ChambaType.ofrece;
     File? selectedImage;
     String? currentImageUrl = initialChamba?.imageUrl;
 
@@ -333,92 +337,92 @@ class _ChambasScreenState extends ConsumerState<ChambasScreen> {
                     },
                   ),
 
-                    TextField(
-                      controller: salaryCtrl,
-                      decoration: const InputDecoration(
-                        labelText: 'Presupuesto/Sueldo (opcional)',
-                      ),
-                      style: const TextStyle(color: Colors.white),
+                  TextField(
+                    controller: salaryCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Presupuesto/Sueldo (opcional)',
                     ),
-                    const SizedBox(height: 20),
-                    // Image Picker Section
-                    GestureDetector(
-                      onTap: () async {
-                        final file = await LambdaImagePicker.pickSingleImage(
-                          context,
-                          title: 'IMAGEN DE LA CHAMBA',
-                        );
-                        if (file != null) {
-                          setState(() => selectedImage = File(file.path));
-                        }
-                      },
-                      child: Container(
-                        height: 150,
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: Colors.black26,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.white12),
-                          image: selectedImage != null
-                              ? DecorationImage(
-                                  image: FileImage(selectedImage!),
-                                  fit: BoxFit.cover,
-                                )
-                              : (currentImageUrl != null
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                  const SizedBox(height: 20),
+                  // Image Picker Section
+                  GestureDetector(
+                    onTap: () async {
+                      final file = await LambdaImagePicker.pickSingleImage(
+                        context,
+                        title: 'IMAGEN DE LA CHAMBA',
+                      );
+                      if (file != null) {
+                        setState(() => selectedImage = File(file.path));
+                      }
+                    },
+                    child: Container(
+                      height: 150,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Colors.black26,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.white12),
+                        image: selectedImage != null
+                            ? DecorationImage(
+                                image: FileImage(selectedImage!),
+                                fit: BoxFit.cover,
+                              )
+                            : (currentImageUrl != null
                                   ? DecorationImage(
                                       image: NetworkImage(currentImageUrl!),
                                       fit: BoxFit.cover,
                                     )
                                   : null),
-                        ),
-                        child: (selectedImage == null && currentImageUrl == null)
-                            ? const Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.add_a_photo_outlined,
+                      ),
+                      child: (selectedImage == null && currentImageUrl == null)
+                          ? const Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.add_a_photo_outlined,
+                                  color: Colors.greenAccent,
+                                  size: 32,
+                                ),
+                                SizedBox(height: 8),
+                                Text(
+                                  'AÑADIR FOTO',
+                                  style: TextStyle(
                                     color: Colors.greenAccent,
-                                    size: 32,
-                                  ),
-                                  SizedBox(height: 8),
-                                  Text(
-                                    'AÑADIR FOTO',
-                                    style: TextStyle(
-                                      color: Colors.greenAccent,
-                                      fontSize: 10,
-                                      fontFamily: 'Courier',
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              )
-                            : Container(
-                                alignment: Alignment.topRight,
-                                padding: const EdgeInsets.all(4),
-                                child: CircleAvatar(
-                                  backgroundColor: Colors.black54,
-                                  radius: 14,
-                                  child: IconButton(
-                                    icon: const Icon(
-                                      Icons.close,
-                                      size: 14,
-                                      color: Colors.white,
-                                    ),
-                                    onPressed: () {
-                                      setState(() {
-                                        selectedImage = null;
-                                        currentImageUrl = null;
-                                      });
-                                    },
+                                    fontSize: 10,
+                                    fontFamily: 'Courier',
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
+                              ],
+                            )
+                          : Container(
+                              alignment: Alignment.topRight,
+                              padding: const EdgeInsets.all(4),
+                              child: CircleAvatar(
+                                backgroundColor: Colors.black54,
+                                radius: 14,
+                                child: IconButton(
+                                  icon: const Icon(
+                                    Icons.close,
+                                    size: 14,
+                                    color: Colors.white,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      selectedImage = null;
+                                      currentImageUrl = null;
+                                    });
+                                  },
+                                ),
                               ),
-                      ),
+                            ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -552,7 +556,8 @@ class _ChambasScreenState extends ConsumerState<ChambasScreen> {
                         ),
                       );
                     },
-                    errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+                    errorBuilder: (context, error, stackTrace) =>
+                        const SizedBox.shrink(),
                   ),
                 ),
               ],
@@ -595,9 +600,7 @@ class _ChambasScreenState extends ConsumerState<ChambasScreen> {
                           initialChamba: chamba,
                         ),
                       ),
-                    if (chamba.authorId == user.id ||
-                        user.role == UserRole.Admin ||
-                        user.role == UserRole.SuperAdmin)
+                    if (chamba.authorId == user.id || user.isAdmin) ...[
                       IconButton(
                         icon: const Icon(
                           Icons.delete,
@@ -606,6 +609,7 @@ class _ChambasScreenState extends ConsumerState<ChambasScreen> {
                         ),
                         onPressed: () => _confirmDeleteChamba(context, chamba),
                       ),
+                    ],
                   ],
                 ],
               ),
@@ -671,7 +675,8 @@ class _ChambaCard extends ConsumerWidget {
     final isBusqueda = chamba.type == ChambaType.busca;
     final currentUser = ref.watch(authProvider).valueOrNull;
     final isInterested =
-        currentUser != null && chamba.interestedUserIds.contains(currentUser.id);
+        currentUser != null &&
+        chamba.interestedUserIds.contains(currentUser.id);
     final isAuthor = currentUser?.id == chamba.authorId;
     final isGuest = currentUser?.role == UserRole.TecnicoInvitado;
 
@@ -723,27 +728,27 @@ class _ChambaCard extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 12),
-              if (chamba.imageUrl != null) ...[
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: Image.network(
-                    chamba.imageUrl!,
-                    height: 150,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                const SizedBox(height: 12),
-              ],
-              Text(
-                chamba.title.toUpperCase(),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Courier',
+            if (chamba.imageUrl != null) ...[
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: Image.network(
+                  chamba.imageUrl!,
+                  height: 150,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
                 ),
               ),
+              const SizedBox(height: 12),
+            ],
+            Text(
+              chamba.title.toUpperCase(),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'Courier',
+              ),
+            ),
             const SizedBox(height: 8),
             Text(
               chamba.description,
@@ -807,7 +812,8 @@ class _ChambaCard extends ConsumerWidget {
                           await NotificationService.notifyChamba(
                             targetUserId: chamba.authorId,
                             sourceUserId: currentUser.id,
-                            sourceUserName: currentUser.apodo ?? currentUser.nombre,
+                            sourceUserName:
+                                currentUser.apodo ?? currentUser.nombre,
                             chambaTitle: chamba.title,
                             chambaId: chamba.id,
                           );
@@ -829,8 +835,9 @@ class _ChambaCard extends ConsumerWidget {
                     side: BorderSide(
                       color: isInterested ? Colors.white24 : Colors.greenAccent,
                     ),
-                    foregroundColor:
-                        isInterested ? Colors.white24 : Colors.greenAccent,
+                    foregroundColor: isInterested
+                        ? Colors.white24
+                        : Colors.greenAccent,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(4),
                     ),

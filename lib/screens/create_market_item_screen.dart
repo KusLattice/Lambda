@@ -120,7 +120,7 @@ class _CreateMarketItemScreenState
 
       final itemData = MarketItem(
         id: widget.initialItem?.id ?? '',
-        sellerId: user.id,
+        authorId: user.id,
         sellerName: (user.apodo != null && user.apodo!.isNotEmpty)
             ? user.apodo!
             : user.nombre,

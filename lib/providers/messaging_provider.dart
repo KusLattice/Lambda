@@ -1,13 +1,15 @@
 import 'dart:io';
 import 'package:async/async.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lambda_app/models/user_model.dart';
 import 'package:lambda_app/models/message_model.dart';
 import 'package:lambda_app/providers/auth_provider.dart';
 import 'package:lambda_app/services/notification_service.dart';
+import 'package:lambda_app/config/firestore_collections.dart';
+import 'package:lambda_app/services/storage_upload_service.dart';
 
 final messagingProvider = Provider((ref) => MessagingService(ref));
 
@@ -23,32 +25,28 @@ class MessagingService {
     final user = _currentUser;
     if (user == null) return;
 
-    await _firestore.collection('messages').doc(messageId).update({
+    await _firestore.collection(FC.messages).doc(messageId).update({
       'labels': FieldValue.arrayUnion(['trash_${user.id}']),
     });
   }
 
-  /// Mueve TODOS los mensajes de un chatId a la papelera (eliminar conversación).
   Future<void> deleteChatConversation(String chatId) async {
     final user = _currentUser;
     if (user == null) return;
 
-    // Buscamos TODOS los mensajes. Filtramos por chatId en el cliente para ser robustos ante mensajes sin campo explícito.
-    final snap = await _firestore.collection('messages').get();
+    final snap = await _firestore
+        .collection(FC.messages)
+        .where('chatId', isEqualTo: chatId)
+        .get();
 
     final batch = _firestore.batch();
-    int count = 0;
     for (final doc in snap.docs) {
-      final msg = Message.fromMap(doc.data(), doc.id);
-      if (msg.chatId == chatId) {
-        batch.update(doc.reference, {
-          'labels': FieldValue.arrayUnion(['trash_${user.id}']),
-        });
-        count++;
-      }
+      batch.update(doc.reference, {
+        'labels': FieldValue.arrayUnion(['trash_${user.id}']),
+      });
     }
 
-    if (count > 0) {
+    if (snap.docs.isNotEmpty) {
       await batch.commit();
     }
   }
@@ -60,7 +58,7 @@ class MessagingService {
     final user = _currentUser;
     if (user == null) return;
 
-    final doc = await _firestore.collection('messages').doc(messageId).get();
+    final doc = await _firestore.collection(FC.messages).doc(messageId).get();
     if (!doc.exists) return;
 
     final data = doc.data()!;
@@ -94,7 +92,7 @@ class MessagingService {
     if (user == null) return;
 
     final snap = await _firestore
-        .collection('messages')
+        .collection(FC.messages)
         .where('chatId', isEqualTo: chatId)
         .get();
 
@@ -118,7 +116,7 @@ class MessagingService {
     if (user == null) return;
 
     final snap = await _firestore
-        .collection('messages')
+        .collection(FC.messages)
         .where('chatId', isEqualTo: chatId)
         .get();
 
@@ -163,8 +161,7 @@ class MessagingService {
 
     final effectiveSenderId = senderIdOverride ?? user.id;
 
-    final isAdmin =
-        user.role == UserRole.Admin || user.role == UserRole.SuperAdmin;
+    final isAdmin = user.isAdmin;
     if (!isAdmin &&
         !user.contactIds.contains(receiverId) &&
         senderIdOverride != 'system_admin') {
@@ -173,32 +170,12 @@ class MessagingService {
       );
     }
 
-    final List<String> imageUrls = [];
-    if (images.isNotEmpty) {
-      for (var i = 0; i < images.length; i++) {
-        final storageRef = FirebaseStorage.instance
-            .ref()
-            .child('messages')
-            .child(
-              '${effectiveSenderId}_img_${DateTime.now().millisecondsSinceEpoch}_$i.jpg',
-            );
-        await storageRef.putFile(images[i]);
-        imageUrls.add(await storageRef.getDownloadURL());
-      }
-    }
+    final List<String> imageUrls = await StorageUploadService.uploadImages(images, 'messages');
 
     final List<String> videoUrls = [];
-    if (videoFiles.isNotEmpty) {
-      for (var i = 0; i < videoFiles.length; i++) {
-        final storageRef = FirebaseStorage.instance
-            .ref()
-            .child('messages')
-            .child(
-              '${effectiveSenderId}_vid_${DateTime.now().millisecondsSinceEpoch}_$i.mp4',
-            );
-        await storageRef.putFile(videoFiles[i]);
-        videoUrls.add(await storageRef.getDownloadURL());
-      }
+    for (final video in videoFiles) {
+      final url = await StorageUploadService.uploadVideo(video, 'messages');
+      if (url != null) videoUrls.add(url);
     }
 
     final chatId = Message.buildChatId(effectiveSenderId, receiverId);
@@ -215,7 +192,7 @@ class MessagingService {
       chatId: chatId,
     );
 
-    await _firestore.collection('messages').add(message.toMap());
+    await _firestore.collection(FC.messages).add(message.toMap());
 
     final senderName = (user.apodo?.isNotEmpty == true)
         ? user.apodo!
@@ -230,7 +207,7 @@ class MessagingService {
     );
 
     if (!user.contactIds.contains(receiverId)) {
-      await _firestore.collection('users').doc(user.id).update({
+      await _firestore.collection(FC.users).doc(user.id).update({
         'contactIds': FieldValue.arrayUnion([receiverId]),
       });
       // Note: We can't update authProvider state directly from here easily if it's a notifier.
@@ -245,7 +222,7 @@ class MessagingService {
     final user = _currentUser;
     if (user == null) return Stream.value([]);
 
-    Query query = _firestore.collection('messages');
+    Query query = _firestore.collection(FC.messages);
 
     final String labelToQuery = label == 'trash' ? 'trash_${user.id}' : label;
 
@@ -282,7 +259,7 @@ class MessagingService {
     final user = _currentUser;
     if (user == null) return;
 
-    await _firestore.collection('messages').doc(messageId).update({
+    await _firestore.collection(FC.messages).doc(messageId).update({
       'labels': FieldValue.arrayRemove(['trash', 'trash_${user.id}']),
     });
   }
@@ -293,7 +270,7 @@ class MessagingService {
     if (user == null) return;
 
     // Usamos tanto la global para Mail como la privada para Chat para seguridad
-    await _firestore.collection('messages').doc(messageId).update({
+    await _firestore.collection(FC.messages).doc(messageId).update({
       'labels': FieldValue.arrayUnion(['trash', 'trash_${user.id}']),
     });
   }
@@ -302,15 +279,14 @@ class MessagingService {
     final user = _currentUser;
     if (user == null) return;
 
-    final isAdmin =
-        user.role == UserRole.Admin || user.role == UserRole.SuperAdmin;
+    final isAdmin = user.isAdmin;
 
     try {
       final receiverIds = [user.id];
       if (isAdmin) receiverIds.add('system_admin');
 
       final snap = await _firestore
-          .collection('messages')
+          .collection(FC.messages)
           .where('receiverId', whereIn: receiverIds)
           .where('isRead', isEqualTo: false)
           .get();
@@ -351,11 +327,12 @@ class MessagingService {
     final user = _currentUser;
     if (user == null) return Stream.value([]);
 
-    final isAdmin =
-        user.role == UserRole.Admin || user.role == UserRole.SuperAdmin;
+    final isAdmin = user.isAdmin;
 
     return _firestore
-        .collection('messages')
+        .collection(FC.messages)
+        .where('chatId', isEqualTo: chatId)
+        .orderBy('timestamp')
         .snapshots()
         .handleError((e) {
           debugPrint('getChatMessagesStream error: $e');
@@ -366,8 +343,6 @@ class MessagingService {
                 return Message.fromMap(doc.data(), doc.id);
               })
               .where((msg) {
-                if (msg.chatId != chatId) return false;
-
                 final bool isSystemInvolved =
                     msg.senderId == 'system_admin' ||
                     msg.receiverId == 'system_admin';
@@ -387,7 +362,6 @@ class MessagingService {
               })
               .toList();
 
-          messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
           return messages;
         });
   }
@@ -396,29 +370,29 @@ class MessagingService {
     final user = _currentUser;
     if (user == null || user.contactIds.isEmpty) return Stream.value([]);
 
+    // Firestore whereIn máximo: 30 elementos
+    final ids = user.contactIds.take(30).toList();
+
     return _firestore
-        .collection('users')
-        .where(FieldPath.documentId, whereIn: user.contactIds.take(10).toList())
+        .collection(FC.users)
+        .where(FieldPath.documentId, whereIn: ids)
         .snapshots()
-        .map(
-          (snap) =>
-              snap.docs.map((doc) => User.fromMap(doc.data(), doc.id)).toList(),
-        );
+        .map((snap) =>
+            snap.docs.map((doc) => User.fromMap(doc.data(), doc.id)).toList());
   }
 
   Stream<List<Message>> getChatConversationsStream() {
     final user = _currentUser;
     if (user == null) return Stream.value([]);
 
-    final isAdmin =
-        user.role == UserRole.Admin || user.role == UserRole.SuperAdmin;
+    final isAdmin = user.isAdmin;
 
     final asSenderQuery = _firestore
-        .collection('messages')
+        .collection(FC.messages)
         .where('senderId', isEqualTo: user.id);
 
     final asReceiverQuery = _firestore
-        .collection('messages')
+        .collection(FC.messages)
         .where('receiverId', isEqualTo: user.id);
 
     final List<Stream<QuerySnapshot>> streams = [
@@ -429,13 +403,13 @@ class MessagingService {
     if (isAdmin) {
       streams.add(
         _firestore
-            .collection('messages')
+            .collection(FC.messages)
             .where('senderId', isEqualTo: 'system_admin')
             .snapshots(),
       );
       streams.add(
         _firestore
-            .collection('messages')
+            .collection(FC.messages)
             .where('receiverId', isEqualTo: 'system_admin')
             .snapshots(),
       );
@@ -446,11 +420,11 @@ class MessagingService {
       asReceiverQuery.snapshots(),
       if (isAdmin) ...[
         _firestore
-            .collection('messages')
+            .collection(FC.messages)
             .where('senderId', isEqualTo: 'system_admin')
             .snapshots(),
         _firestore
-            .collection('messages')
+            .collection(FC.messages)
             .where('receiverId', isEqualTo: 'system_admin')
             .snapshots(),
       ],

@@ -199,8 +199,7 @@ class _TipsHacksScreenState extends ConsumerState<TipsHacksScreen> {
                                 },
                               ),
                             if (hack.userId == user.id ||
-                                user.role == UserRole.Admin ||
-                                user.role == UserRole.SuperAdmin)
+                                user.isAdmin)
                               IconButton(
                                 icon: const Icon(
                                   Icons.delete,

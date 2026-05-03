@@ -22,13 +22,14 @@ class AppConfig {
 
   /// API key para Gemini Service.
   static String get geminiApiKey =>
-      const String.fromEnvironment('GEMINI_API_KEY', defaultValue: defaultMapsApiKey);
+      const String.fromEnvironment('GEMINI_API_KEY', defaultValue: '');
+
+  static bool get hasGeminiKey => geminiApiKey.isNotEmpty;
+  static bool get hasMapsKey => mapsApiKey.isNotEmpty;
 
   /// Valida configuraciones mínimas al arranque.
-  /// En lugar de lanzar una excepción, emite warnings no fatales para
-  /// que la app pueda seguir corriendo en debug sin --dart-define.
   static void validate() {
-    if (mapsApiKey.isEmpty) {
+    if (!hasMapsKey) {
       debugPrint(
         '[AppConfig] ⚠️ MAPS_API_KEY está vacío. '
         'Usa --dart-define=MAPS_API_KEY=... para habilitar Maps y AQI.',
@@ -40,7 +41,7 @@ class AppConfig {
         'Usa --dart-define=WEATHER_API_KEY=... para habilitar WeatherService.',
       );
     }
-    if (geminiApiKey.isEmpty) {
+    if (!hasGeminiKey) {
       debugPrint(
         '[AppConfig] ⚠️ GEMINI_API_KEY está vacío. '
         'Usa --dart-define=GEMINI_API_KEY=... para habilitar búsqueda IA.',

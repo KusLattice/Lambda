@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
@@ -18,7 +19,7 @@ import 'package:lambda_app/providers/fiber_cut_provider.dart';
 import 'package:lambda_app/models/fiber_cut_report.dart';
 import 'package:lambda_app/screens/fiber_cut_screen.dart';
 import 'package:lambda_app/services/search_service.dart';
-import 'package:lambda_app/providers/semantic_search_provider.dart';
+// import 'package:lambda_app/providers/semantic_search_provider.dart';
 
 // webview_windows solo existe en Windows, importar condicionalmente
 // ignore: uri_does_not_exist
@@ -524,6 +525,14 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
       _webviewController!.url.listen((url) {
         if (mounted) _textController.text = url;
       });
+      if (!AppConfig.hasMapsKey) {
+        debugPrint('Error: MAPS_API_KEY no configurada para Windows Webview.');
+        const errorHtml = '<html><body style="background:black;color:white;display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif;">'
+          '<div><h2 style="color:red;">⚠️ Radar Offline</h2><p>MAPS_API_KEY no detectada.</p></div>'
+          '</body></html>';
+        await _webviewController!.loadUrl('data:text/html;base64,${base64Encode(utf8.encode(errorHtml))}');
+        return;
+      }
       final initialUrl =
           'https://www.google.com/maps/embed/v1/view?key=${AppConfig.mapsApiKey}&center=-33.4489,-70.6693&zoom=5';
       await _webviewController!.loadUrl(initialUrl);
@@ -588,7 +597,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
       final user = ref.read(authProvider).valueOrNull;
       final semanticResults = await _searchService.performOmniSearch(
         query,
-        isAdmin: user?.role == UserRole.SuperAdmin || user?.role == UserRole.Admin,
+        isAdmin: user?.isAdmin ?? false,
         userLocation: user?.lastKnownPosition,
       );
 
@@ -734,7 +743,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                     ),
                     const SizedBox(height: 10),
                     // 🕶️ Filtro de Roles (Solo Admins)
-                    if (user.role == UserRole.Admin || user.role == UserRole.SuperAdmin)
+                    if (user.isAdmin)
                       PopupMenuButton<UserRole?>(
                         tooltip: 'Filtrar por Segmento',
                         color: Colors.black87,

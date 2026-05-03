@@ -1,18 +1,24 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lambda_app/models/lodging_post_model.dart';
 import 'package:lambda_app/models/user_model.dart';
+import 'package:lambda_app/services/storage_upload_service.dart';
+import 'package:lambda_app/config/firestore_collections.dart';
 
 class LodgingNotifier extends StateNotifier<AsyncValue<List<LodgingPost>>> {
   LodgingNotifier() : super(const AsyncValue.loading()) {
     _init();
   }
 
+  StreamSubscription? _sub;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
   void _init() {
-    FirebaseFirestore.instance
-        .collection('lodging_tracker')
+    _sub = FirebaseFirestore.instance
+        .collection(FC.lodgingTracker)
         .orderBy('createdAt', descending: true)
         .snapshots()
         .listen(
@@ -20,12 +26,18 @@ class LodgingNotifier extends StateNotifier<AsyncValue<List<LodgingPost>>> {
             final posts = snapshot.docs
                 .map((doc) => LodgingPost.fromFirestore(doc))
                 .toList();
-            state = AsyncValue.data(posts);
+            if (mounted) state = AsyncValue.data(posts);
           },
           onError: (err) {
-            state = AsyncValue.error(err, StackTrace.current);
+            if (mounted) state = AsyncValue.error(err, StackTrace.current);
           },
         );
+  }
+
+  @override
+  void dispose() {
+    _sub?.cancel();
+    super.dispose();
   }
 
   Future<void> addLodgingPost({
@@ -33,26 +45,15 @@ class LodgingNotifier extends StateNotifier<AsyncValue<List<LodgingPost>>> {
     List<File> imageFiles = const [],
     File? videoFile,
   }) async {
-    final List<String> imageUrls = [];
-    final List<String> videoUrls = [];
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
 
     // Subir imágenes
-    for (int i = 0; i < imageFiles.length; i++) {
-      final ref = FirebaseStorage.instance.ref().child(
-        'lodging_media/$timestamp/img_$i.jpg',
-      );
-      await ref.putFile(imageFiles[i]);
-      imageUrls.add(await ref.getDownloadURL());
-    }
+    final imageUrls = await StorageUploadService.uploadImages(imageFiles, 'lodging_media');
 
     // Subir video
+    final List<String> videoUrls = [];
     if (videoFile != null) {
-      final ref = FirebaseStorage.instance.ref().child(
-        'lodging_media/$timestamp/video.mp4',
-      );
-      await ref.putFile(videoFile);
-      videoUrls.add(await ref.getDownloadURL());
+      final videoUrl = await StorageUploadService.uploadVideo(videoFile, 'lodging_media');
+      if (videoUrl != null) videoUrls.add(videoUrl);
     }
 
     final postWithMedia = post.copyWith(
@@ -61,13 +62,13 @@ class LodgingNotifier extends StateNotifier<AsyncValue<List<LodgingPost>>> {
       createdAt: DateTime.now(),
     );
 
-    final batch = FirebaseFirestore.instance.batch();
-    final docRef = FirebaseFirestore.instance
-        .collection('lodging_tracker')
+    final batch = _firestore.batch();
+    final docRef = _firestore
+        .collection(FC.lodgingTracker)
         .doc();
     batch.set(docRef, postWithMedia.toMap());
 
-    final statsRef = FirebaseFirestore.instance
+    final statsRef = _firestore
         .collection('metadata')
         .doc('app_stats');
     batch.set(statsRef, {
@@ -87,36 +88,20 @@ class LodgingNotifier extends StateNotifier<AsyncValue<List<LodgingPost>>> {
   }) async {
     List<String> finalImageUrls = List.from(existingImageUrls);
     List<String> finalVideoUrls = List.from(existingVideoUrls);
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
+
 
     if (imageFiles != null && imageFiles.isNotEmpty) {
-      for (final url in existingImageUrls) {
-        try {
-          await FirebaseStorage.instance.refFromURL(url).delete();
-        } catch (_) {}
-      }
+      await StorageUploadService.deleteUrls(existingImageUrls);
       finalImageUrls.clear();
-      for (int i = 0; i < imageFiles.length; i++) {
-        final ref = FirebaseStorage.instance.ref().child(
-          'lodging_media/$timestamp/img_$i.jpg',
-        );
-        await ref.putFile(imageFiles[i]);
-        finalImageUrls.add(await ref.getDownloadURL());
-      }
+      final newUrls = await StorageUploadService.uploadImages(imageFiles, 'lodging_media');
+      finalImageUrls.addAll(newUrls);
     }
 
     if (videoFile != null) {
-      for (final url in existingVideoUrls) {
-        try {
-          await FirebaseStorage.instance.refFromURL(url).delete();
-        } catch (_) {}
-      }
+      await StorageUploadService.deleteUrls(existingVideoUrls);
       finalVideoUrls.clear();
-      final ref = FirebaseStorage.instance.ref().child(
-        'lodging_media/$timestamp/video.mp4',
-      );
-      await ref.putFile(videoFile);
-      finalVideoUrls.add(await ref.getDownloadURL());
+      final videoUrl = await StorageUploadService.uploadVideo(videoFile, 'lodging_media');
+      if (videoUrl != null) finalVideoUrls.add(videoUrl);
     }
 
     final updateData = {
@@ -126,7 +111,7 @@ class LodgingNotifier extends StateNotifier<AsyncValue<List<LodgingPost>>> {
     };
 
     await FirebaseFirestore.instance
-        .collection('lodging_tracker')
+        .collection(FC.lodgingTracker)
         .doc(id)
         .update(updateData);
   }
@@ -138,31 +123,24 @@ class LodgingNotifier extends StateNotifier<AsyncValue<List<LodgingPost>>> {
     List<String> videoUrls = const [],
   }) async {
     final doc = await FirebaseFirestore.instance
-        .collection('lodging_tracker')
+        .collection(FC.lodgingTracker)
         .doc(id)
         .get();
     if (!doc.exists) return;
 
     final data = doc.data()!;
     final isOwner = data['userId'] == currentUser.id;
-    final isAdmin =
-        currentUser.role == UserRole.Admin ||
-        currentUser.role == UserRole.SuperAdmin;
+    final isAdmin = currentUser.isAdmin;
 
     if (isOwner || isAdmin) {
       // Borrar de Firestore
       await FirebaseFirestore.instance
-          .collection('lodging_tracker')
+          .collection(FC.lodgingTracker)
           .doc(id)
           .delete();
 
       // Borrar de Storage
-      final allMedia = [...imageUrls, ...videoUrls];
-      for (final url in allMedia) {
-        try {
-          await FirebaseStorage.instance.refFromURL(url).delete();
-        } catch (_) {}
-      }
+      await StorageUploadService.deleteUrls([...imageUrls, ...videoUrls]);
     } else {
       throw Exception('No tienes permiso para borrar esta publicación.');
     }

@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:lambda_app/models/fiber_cut_report.dart';
+import 'package:lambda_app/config/firestore_collections.dart';
 
 class FiberCutService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -10,7 +11,7 @@ class FiberCutService {
   /// Stream de reportes activos (no resueltos) ordenados por fecha descendente.
   Stream<List<FiberCutReport>> getActiveReports() {
     return _firestore
-        .collection('fiber_cut_reports')
+        .collection(FC.fiberCutReports)
         .where('isResolved', isEqualTo: false)
         .orderBy('createdAt', descending: true)
         .snapshots()
@@ -72,23 +73,23 @@ class FiberCutService {
       'comuna': comuna,
     };
 
-    await _firestore.collection('fiber_cut_reports').add(report);
+    await _firestore.collection(FC.fiberCutReports).add(report);
   }
 
   /// Marca un reporte como resuelto.
   Future<void> resolveReport(String reportId) async {
-    await _firestore.collection('fiber_cut_reports').doc(reportId).update({
+    await _firestore.collection(FC.fiberCutReports).doc(reportId).update({
       'isResolved': true,
     });
   }
 
   /// Actualiza un reporte existente
   Future<void> updateReport(String reportId, Map<String, dynamic> data) async {
-    await _firestore.collection('fiber_cut_reports').doc(reportId).update(data);
+    await _firestore.collection(FC.fiberCutReports).doc(reportId).update(data);
   }
 
   /// Elimina un reporte permanentemente
   Future<void> deleteReport(String reportId) async {
-    await _firestore.collection('fiber_cut_reports').doc(reportId).delete();
+    await _firestore.collection(FC.fiberCutReports).doc(reportId).delete();
   }
 }

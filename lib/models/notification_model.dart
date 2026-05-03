@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// Tipos de notificación soportados.
-enum NotificationType { comment, reaction, mention, newPost, mail }
+enum NotificationType { comment, reaction, mention, newPost, mail, chamba, system }
 
 /// Modelo de notificación para el sistema de alertas Lambda.
 /// Se almacena en la colección `notifications` de Firestore.
@@ -108,6 +108,10 @@ class AppNotification {
         return '📌';
       case NotificationType.mail:
         return '📬';
+      case NotificationType.chamba:
+        return '🛠️';
+      case NotificationType.system:
+        return '🛡️';
     }
   }
 }

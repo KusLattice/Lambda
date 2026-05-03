@@ -174,7 +174,7 @@ class _ConversationList extends ConsumerWidget {
           itemBuilder: (context, index) {
             final lastMsg = conversations[index];
             final isMe = lastMsg.senderId == me.id;
-            final isAdmin = me.role == UserRole.Admin || me.role == UserRole.SuperAdmin;
+            final isAdmin = me.isAdmin;
             
             String otherUserId = isMe ? lastMsg.receiverId : lastMsg.senderId;
 
@@ -261,6 +261,8 @@ class _ConversationTile extends ConsumerWidget {
           }
         }
 
+        final isOnline = otherUser != null && AuthStateNotifier.isOnlineFromTimestamp(otherUser.lastActiveAt);
+
         return _buildTile(
           context: context,
           ref: ref,
@@ -271,6 +273,7 @@ class _ConversationTile extends ConsumerWidget {
           isMe: isMe,
           time: time,
           targetUserId: otherUserId,
+          isOnline: isOnline,
         );
       },
       loading: () => _buildLoadingTile(),
@@ -326,6 +329,7 @@ class _ConversationTile extends ConsumerWidget {
     required bool isMe,
     required String time,
     required String targetUserId,
+    bool isOnline = false,
   }) {
     final previewText =
         lastMessage.imageUrls.isNotEmpty && lastMessage.body.isEmpty
@@ -392,6 +396,20 @@ class _ConversationTile extends ConsumerWidget {
                         )
                       : null,
                 ),
+                if (isOnline && !isSystem)
+                  Positioned(
+                    right: 0,
+                    bottom: 0,
+                    child: Container(
+                      width: 14,
+                      height: 14,
+                      decoration: BoxDecoration(
+                        color: Colors.greenAccent,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.black, width: 2),
+                      ),
+                    ),
+                  ),
                 if (hasUnread)
                   Positioned(
                     right: 0,
@@ -934,13 +952,31 @@ class _ContactsList extends ConsumerWidget {
                       vertical: 5,
                     ),
                     child: ListTile(
-                      leading: CircleAvatar(
-                        backgroundImage: contact.fotoUrl != null
-                            ? NetworkImage(contact.fotoUrl!)
-                            : null,
-                        child: contact.fotoUrl == null
-                            ? const Icon(Icons.person)
-                            : null,
+                      leading: Stack(
+                        children: [
+                          CircleAvatar(
+                            backgroundImage: contact.fotoUrl != null
+                                ? NetworkImage(contact.fotoUrl!)
+                                : null,
+                            child: contact.fotoUrl == null
+                                ? const Icon(Icons.person)
+                                : null,
+                          ),
+                          if (AuthStateNotifier.isOnlineFromTimestamp(contact.lastActiveAt))
+                            Positioned(
+                              right: 0,
+                              bottom: 0,
+                              child: Container(
+                                width: 12,
+                                height: 12,
+                                decoration: BoxDecoration(
+                                  color: Colors.greenAccent,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: Colors.black, width: 2),
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                       title: Text(
                         contact.apodo ?? contact.nombre,

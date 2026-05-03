@@ -21,7 +21,7 @@ extension MarketCategoryExtension on MarketCategory {
 @immutable
 class MarketItem {
   final String id;
-  final String sellerId;
+  final String authorId;
   final String sellerName;
   final String title;
   final String description;
@@ -37,7 +37,7 @@ class MarketItem {
 
   const MarketItem({
     required this.id,
-    required this.sellerId,
+    required this.authorId,
     required this.sellerName,
     required this.title,
     required this.description,
@@ -52,7 +52,7 @@ class MarketItem {
 
   MarketItem copyWith({
     String? id,
-    String? sellerId,
+    String? authorId,
     String? sellerName,
     String? title,
     String? description,
@@ -66,7 +66,7 @@ class MarketItem {
   }) {
     return MarketItem(
       id: id ?? this.id,
-      sellerId: sellerId ?? this.sellerId,
+      authorId: authorId ?? this.authorId,
       sellerName: sellerName ?? this.sellerName,
       title: title ?? this.title,
       description: description ?? this.description,
@@ -82,7 +82,7 @@ class MarketItem {
 
   Map<String, dynamic> toMap() {
     return {
-      'sellerId': sellerId,
+      'authorId': authorId,
       'sellerName': sellerName,
       'title': title,
       'description': description,
@@ -99,7 +99,7 @@ class MarketItem {
   factory MarketItem.fromMap(Map<String, dynamic> map, String documentId) {
     return MarketItem(
       id: documentId,
-      sellerId: map['sellerId'] ?? '',
+      authorId: map['authorId'] ?? '',
       sellerName: map['sellerName'] ?? 'Anónimo',
       title: map['title'] ?? '',
       description: map['description'] ?? '',

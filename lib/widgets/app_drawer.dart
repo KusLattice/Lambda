@@ -23,8 +23,7 @@ class AppDrawer extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final bool isAdmin =
-        user?.role == UserRole.Admin || user?.role == UserRole.SuperAdmin;
+    final isAdmin = user?.isAdmin ?? false;
 
     return Drawer(
       backgroundColor: const Color(0xFF111111),

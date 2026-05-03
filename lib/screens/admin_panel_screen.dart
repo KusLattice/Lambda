@@ -55,11 +55,11 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
     if (currentUser.correo == 'kus4587@gmail.com') {
       return true; // Super bypass para Seba
     }
-    if (currentUser.role == UserRole.SuperAdmin) {
+    if (currentUser.isSuperAdmin) {
       // Un SuperAdmin no puede editar a otro SuperAdmin (excepto Seba)
       return targetUser.role != UserRole.SuperAdmin;
     }
-    if (currentUser.role == UserRole.Admin) {
+    if (currentUser.role == UserRole.Admin) { // Exactamente Admin (no SuperAdmin)
       // Un Admin no puede editar a otros Admins o SuperAdmins
       return targetUser.role != UserRole.SuperAdmin &&
           targetUser.role != UserRole.Admin;
@@ -68,7 +68,7 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
   }
 
   List<UserRole> _getAvailableRoles(User currentUser) {
-    if (currentUser.role == UserRole.SuperAdmin) return UserRole.values;
+    if (currentUser.isSuperAdmin) return UserRole.values;
     if (currentUser.role == UserRole.Admin) {
       return [
         UserRole.Admin,
@@ -123,8 +123,7 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
           false;
     }
 
-    if (currentUser.role == UserRole.Admin ||
-        currentUser.role == UserRole.SuperAdmin) {
+    if (currentUser.isAdmin) {
       menuItems.add(
         PopupMenuItem<String>(
           value: targetUser.isBanned ? 'unban' : 'ban',
@@ -157,9 +156,7 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (targetUser.isBanned &&
-            (currentUser.role == UserRole.Admin ||
-                currentUser.role == UserRole.SuperAdmin))
+        if (targetUser.isBanned && currentUser.isAdmin)
           TextButton.icon(
             icon: const Icon(Icons.check_circle_outline, color: Colors.green),
             label: const Text(
@@ -647,8 +644,7 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
                             ],
                           ),
                           _buildRoleSelector(ref, currentUser, user),
-                          if (currentUser.role == UserRole.SuperAdmin ||
-                              currentUser.role == UserRole.Admin) ...[
+                          if (currentUser.isAdmin) ...[
                             const Divider(color: Colors.white24, height: 15),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceAround,

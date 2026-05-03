@@ -1,0 +1,19 @@
+abstract final class FC {
+  static const users            = 'users';
+  static const messages         = 'messages';
+  static const notifications    = 'notifications';
+  static const foodTracker      = 'food_tracker';
+  static const lodgingTracker   = 'lodging_tracker';
+  static const marketItems      = 'market_items';
+  static const hacksVault       = 'hacks_vault';
+  static const naveVault        = 'nave_vault';
+  static const fiberCutReports  = 'fiber_cut_reports';
+  static const chambas          = 'chambas';
+  static const randomBoard      = 'random_board';
+  static const nicknames        = 'nicknames';
+  static const metadata         = 'metadata';
+  static const contactRequests  = 'contact_requests';
+  static const adminRequests    = 'admin_requests';
+  static const telecomNews      = 'telecom_news';
+  static const config           = 'config';
+}

@@ -1,6 +1,8 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:lambda_app/config/firestore_collections.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
@@ -20,7 +22,7 @@ class OtaUpdateService {
       // 2. Obtener versión más reciente desde Firestore
       debugPrint('OTA: Verificando Firestore metadata/app_info...');
       final docSnapshot = await _firestore
-          .collection('metadata')
+          .collection(FC.metadata)
           .doc('app_info')
           .get();
 
@@ -127,7 +129,7 @@ class _UpdateDialogState extends State<_UpdateDialog> {
 
   Future<void> _downloadAndInstall() async {
     // Pedir permisos de almacenamiento en Android antiguos.
-    if (Platform.isAndroid) {
+    if (!kIsWeb && Platform.isAndroid) {
       if (await Permission.requestInstallPackages.request().isDenied) {
         setState(() {
           _statusMessage = 'Se necesita permiso para instalar.';

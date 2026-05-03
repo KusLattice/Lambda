@@ -413,9 +413,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     }
 
     final isViewingSelf = currentUser?.id == user.id;
-    final isAdmin =
-        currentUser?.role == UserRole.Admin ||
-        currentUser?.role == UserRole.SuperAdmin;
+    final isAdmin = currentUser?.isAdmin ?? false;
     final isSuperAdmin = currentUser?.role == UserRole.SuperAdmin;
     // ... rest of the build method uses 'user' for display, but editing actions should ideally be blocked or handled if viewing others.
     // For simplicity, we disable edit buttons if not viewing self, unless SuperAdmin.

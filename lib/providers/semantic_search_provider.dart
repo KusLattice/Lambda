@@ -47,14 +47,14 @@ class SemanticSearchNotifier
       // Búsqueda inteligente omnidireccional con privilegios de admin si corresponde
       final allResults = await _searchService.performOmniSearch(
         query,
-        isAdmin: user.role == UserRole.SuperAdmin || user.role == UserRole.Admin,
+        isAdmin: user.isAdmin,
         userLocation: user.lastKnownPosition,
       );
 
       // Protocolo de Seguridad Táctico: Filtrado por Rol y Permisos
       final filteredResults = allResults.where((res) {
         // SuperAdmins y Admins tienen acceso total maestro
-        if (user.role == UserRole.SuperAdmin || user.role == UserRole.Admin) {
+        if (user.isAdmin) {
           return true;
         }
 

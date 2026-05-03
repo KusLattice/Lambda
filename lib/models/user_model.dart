@@ -113,6 +113,15 @@ class User {
   final String? statusEmoji;
   final String? customStatus;
 
+  /// Verdadero si el usuario tiene permisos de administración.
+  bool get isAdmin => role == UserRole.Admin || role == UserRole.SuperAdmin;
+
+  /// Verdadero solo para SuperAdmin.
+  bool get isSuperAdmin => role == UserRole.SuperAdmin;
+
+  /// Verdadero si el usuario tiene acceso verificado o superior.
+  bool get isVerified => role == UserRole.TecnicoVerificado || isAdmin;
+
   // Un método 'copyWith' es útil para crear una copia de un usuario
   // con algunos campos modificados, sin mutar el original.
   User copyWith({

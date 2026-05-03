@@ -1,22 +1,26 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lambda_app/models/food_post_model.dart';
 import 'package:lambda_app/models/user_model.dart';
+import 'package:lambda_app/services/storage_upload_service.dart';
+import 'package:lambda_app/config/firestore_collections.dart';
 
 class FoodNotifier extends StateNotifier<AsyncValue<List<FoodPost>>> {
   FoodNotifier() : super(const AsyncValue.loading()) {
     _init();
   }
 
+  StreamSubscription? _sub;
+
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseStorage _storage = FirebaseStorage.instance;
 
   void _init() {
-    _firestore
-        .collection('food_tracker')
+    _sub = _firestore
+        .collection(FC.foodTracker)
         .orderBy('createdAt', descending: true)
         .snapshots()
         .listen(
@@ -24,12 +28,18 @@ class FoodNotifier extends StateNotifier<AsyncValue<List<FoodPost>>> {
             final posts = snapshot.docs
                 .map((doc) => FoodPost.fromFirestore(doc))
                 .toList();
-            state = AsyncValue.data(posts);
+            if (mounted) state = AsyncValue.data(posts);
           },
           onError: (err) {
-            state = AsyncValue.error(err, StackTrace.current);
+            if (mounted) state = AsyncValue.error(err, StackTrace.current);
           },
         );
+  }
+
+  @override
+  void dispose() {
+    _sub?.cancel();
+    super.dispose();
   }
 
   Future<void> addFoodPost({
@@ -37,26 +47,16 @@ class FoodNotifier extends StateNotifier<AsyncValue<List<FoodPost>>> {
     required List<File> imageFiles,
     File? videoFile,
   }) async {
-    final batch = _firestore.batch();
-    final docRef = _firestore.collection('food_tracker').doc();
-
-    final List<String> imageUrls = [];
-    final List<String> videoUrls = [];
+    final docRef = _firestore.collection(FC.foodTracker).doc();
 
     // Subir imágenes
-    for (int i = 0; i < imageFiles.length; i++) {
-      final ref = _storage.ref().child('food_media/${docRef.id}_img_$i.jpg');
-      await ref.putFile(imageFiles[i]);
-      final url = await ref.getDownloadURL();
-      imageUrls.add(url);
-    }
+    final imageUrls = await StorageUploadService.uploadImages(imageFiles, 'market_media');
 
     // Subir video
+    final List<String> videoUrls = [];
     if (videoFile != null) {
-      final ref = _storage.ref().child('food_media/${docRef.id}_vid.mp4');
-      await ref.putFile(videoFile);
-      final url = await ref.getDownloadURL();
-      videoUrls.add(url);
+      final videoUrl = await StorageUploadService.uploadVideo(videoFile, 'market_media');
+      if (videoUrl != null) videoUrls.add(videoUrl);
     }
 
     final finalPost = post.copyWith(
@@ -65,14 +65,7 @@ class FoodNotifier extends StateNotifier<AsyncValue<List<FoodPost>>> {
       videoUrls: videoUrls,
     );
 
-    batch.set(docRef, finalPost.toMap());
-
-    final statsRef = _firestore.collection('metadata').doc('app_stats');
-    batch.set(statsRef, {
-      'foodCount': FieldValue.increment(1),
-    }, SetOptions(merge: true));
-
-    await batch.commit();
+    await docRef.set(finalPost.toMap());
   }
 
   Future<void> updateFoodPost(
@@ -90,41 +83,23 @@ class FoodNotifier extends StateNotifier<AsyncValue<List<FoodPost>>> {
       // Si hay nuevas imágenes, reemplazamos (estilo FiberCut/Nave)
       if (imageFiles != null) {
         // Borrar viejas de Storage
-        for (final url in finalImageUrls) {
-          try {
-            await _storage.refFromURL(url).delete();
-          } catch (_) {}
-        }
+        await StorageUploadService.deleteUrls(finalImageUrls);
         finalImageUrls.clear();
 
         // Subir nuevas
-        for (int i = 0; i < imageFiles.length; i++) {
-          final ref = _storage.ref().child(
-            'food_media/${id}_img_${DateTime.now().millisecondsSinceEpoch}_$i.jpg',
-          );
-          await ref.putFile(imageFiles[i]);
-          final url = await ref.getDownloadURL();
-          finalImageUrls.add(url);
-        }
+        final newUrls = await StorageUploadService.uploadImages(imageFiles, 'food_media');
+        finalImageUrls.addAll(newUrls);
       }
 
       // Manejo de video
       if (videoFile != null) {
         // Borrar viejos
-        for (final url in finalVideoUrls) {
-          try {
-            await _storage.refFromURL(url).delete();
-          } catch (_) {}
-        }
+        await StorageUploadService.deleteUrls(finalVideoUrls);
         finalVideoUrls.clear();
 
         // Subir nuevo
-        final ref = _storage.ref().child(
-          'food_media/${id}_vid_${DateTime.now().millisecondsSinceEpoch}.mp4',
-        );
-        await ref.putFile(videoFile);
-        final url = await ref.getDownloadURL();
-        finalVideoUrls.add(url);
+        final videoUrl = await StorageUploadService.uploadVideo(videoFile, 'food_media');
+        if (videoUrl != null) finalVideoUrls.add(videoUrl);
       }
 
       final Map<String, dynamic> updateData = Map.from(data);
@@ -132,7 +107,7 @@ class FoodNotifier extends StateNotifier<AsyncValue<List<FoodPost>>> {
       updateData['videoUrls'] = finalVideoUrls;
       updateData['updatedAt'] = FieldValue.serverTimestamp();
 
-      await _firestore.collection('food_tracker').doc(id).update(updateData);
+      await _firestore.collection(FC.foodTracker).doc(id).update(updateData);
     } catch (e) {
       debugPrint('Error updating food post: $e');
       rethrow;
@@ -145,27 +120,20 @@ class FoodNotifier extends StateNotifier<AsyncValue<List<FoodPost>>> {
     List<String>? imageUrls,
     List<String>? videoUrls,
   }) async {
-    final doc = await _firestore.collection('food_tracker').doc(id).get();
+    final doc = await _firestore.collection(FC.foodTracker).doc(id).get();
     if (!doc.exists) return;
 
     final data = doc.data()!;
     final isOwner = data['userId'] == currentUser.id;
-    final isAdmin =
-        currentUser.role == UserRole.Admin ||
-        currentUser.role == UserRole.SuperAdmin;
+    final isAdmin = currentUser.isAdmin;
 
     if (isOwner || isAdmin) {
       // Borrar de Firestore
-      await _firestore.collection('food_tracker').doc(id).delete();
+      await _firestore.collection(FC.foodTracker).doc(id).delete();
 
       // Borrar de Storage
-      final allMedia = [...(imageUrls ?? []), ...(videoUrls ?? [])];
-
-      for (final url in allMedia) {
-        try {
-          await _storage.refFromURL(url).delete();
-        } catch (_) {}
-      }
+      final allMedia = <String>[...(imageUrls ?? []), ...(videoUrls ?? [])];
+      await StorageUploadService.deleteUrls(allMedia);
     } else {
       throw Exception('No tienes permiso para borrar esta publicación.');
     }

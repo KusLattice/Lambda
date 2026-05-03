@@ -12,6 +12,8 @@ import 'package:lambda_app/models/lat_lng.dart';
 import 'package:lambda_app/services/notification_service.dart';
 import 'package:lambda_app/models/message_model.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:lambda_app/config/firestore_collections.dart';
+import 'package:lambda_app/services/storage_upload_service.dart';
 
 // --- PROVEEDORES BASE DE FIREBASE ---
 
@@ -35,13 +37,12 @@ final authStateChangesProvider = StreamProvider<firebase.User?>(
 final userDocumentStreamProvider = StreamProvider.autoDispose
     .family<DocumentSnapshot, String>((ref, userId) {
       final firestore = ref.watch(firestoreProvider);
-      return firestore.collection(_usersCollection).doc(userId).snapshots();
+      return firestore.collection(FC.users).doc(userId).snapshots();
     });
 
 // --- PROVEEDOR PRINCIPAL DE ESTADO DE AUTENTICACIÓN ---
 
-/// Nombre de la colección de usuarios en Firestore.
-const String _usersCollection = 'users';
+
 
 class AuthStateNotifier extends AutoDisposeAsyncNotifier<User?> {
   FirebaseFirestore get _firestore => ref.read(firestoreProvider);
@@ -69,7 +70,7 @@ class AuthStateNotifier extends AutoDisposeAsyncNotifier<User?> {
       debugPrint('_buildUser gathering data for ${firebaseUser.uid}');
 
       final userDocRef = _firestore
-          .collection(_usersCollection)
+          .collection(FC.users)
           .doc(firebaseUser.uid);
       debugPrint('_buildUser: Fetching doc for UID: ${firebaseUser.uid}');
       final userDoc = await userDocRef.get();
@@ -97,8 +98,14 @@ class AuthStateNotifier extends AutoDisposeAsyncNotifier<User?> {
       }
 
       // --- PROTOCOLO OMEGA: Acceso SuperAdmin Forzado ---
-      // This part is important for the user, so let's keep it.
-      const superAdminEmails = ['kus4587@gmail.com'];
+      final configDoc = await _firestore
+          .collection(FC.config)
+          .doc('super_admins')
+          .get();
+      final superAdminEmails = List<String>.from(
+        configDoc.data()?['emails'] ?? [],
+      );
+
       if (firebaseUser.email != null &&
           superAdminEmails.contains(firebaseUser.email)) {
         if (user.role != UserRole.SuperAdmin ||
@@ -170,7 +177,7 @@ class AuthStateNotifier extends AutoDisposeAsyncNotifier<User?> {
       String email = emailOrNickname;
       if (!emailOrNickname.contains('@')) {
         final nicknameDoc = await _firestore
-            .collection('nicknames')
+            .collection(FC.nicknames)
             .doc(emailOrNickname.toLowerCase())
             .get();
         if (nicknameDoc.exists && nicknameDoc.data()!.containsKey('email')) {
@@ -311,8 +318,8 @@ class AuthStateNotifier extends AutoDisposeAsyncNotifier<User?> {
       throw Exception('El apodo no puede contener el símbolo "@".');
     }
 
-    final nicknamesCol = _firestore.collection('nicknames');
-    final userDocRef = _firestore.collection(_usersCollection).doc(user.id);
+    final nicknamesCol = _firestore.collection(FC.nicknames);
+    final userDocRef = _firestore.collection(FC.users).doc(user.id);
 
     await _firestore.runTransaction((transaction) async {
       // 1. Obtener el estado MÁS RECIENTE del documento del usuario DENTRO de la transacción.
@@ -359,16 +366,9 @@ class AuthStateNotifier extends AutoDisposeAsyncNotifier<User?> {
     final user = state.valueOrNull;
     if (user == null) return;
 
-    final file = File(filePath);
-    final storageRef = FirebaseStorage.instance
-        .ref()
-        .child('profiles')
-        .child('${user.id}.jpg');
+    final downloadUrl = await StorageUploadService.uploadProfilePhoto(File(filePath), user.id);
 
-    await storageRef.putFile(file);
-    final downloadUrl = await storageRef.getDownloadURL();
-
-    await _firestore.collection(_usersCollection).doc(user.id).update({
+    await _firestore.collection(FC.users).doc(user.id).update({
       'fotoUrl': downloadUrl,
     });
 
@@ -395,7 +395,7 @@ class AuthStateNotifier extends AutoDisposeAsyncNotifier<User?> {
       throw Exception('Usuario no autenticado.');
     }
 
-    final userDocRef = _firestore.collection(_usersCollection).doc(user.id);
+    final userDocRef = _firestore.collection(FC.users).doc(user.id);
 
     await _firestore.runTransaction((transaction) async {
       final userDocSnapshot = await transaction.get(userDocRef);
@@ -407,8 +407,7 @@ class AuthStateNotifier extends AutoDisposeAsyncNotifier<User?> {
       final currentEditCounts = Map<String, int>.from(
         currentData['editCounts'] ?? {},
       );
-      final isAdmin =
-          user.role == UserRole.Admin || user.role == UserRole.SuperAdmin;
+      final isAdmin = user.isAdmin;
       final updates = <String, dynamic>{};
 
       // Limites de edición para nombre
@@ -517,7 +516,7 @@ class AuthStateNotifier extends AutoDisposeAsyncNotifier<User?> {
     final user = state.valueOrNull;
     if (user == null) return;
 
-    await _firestore.collection(_usersCollection).doc(user.id).update({
+    await _firestore.collection(FC.users).doc(user.id).update({
       fieldName: value,
     });
 
@@ -536,7 +535,7 @@ class AuthStateNotifier extends AutoDisposeAsyncNotifier<User?> {
     final user = state.valueOrNull;
     if (user == null) return;
     try {
-      await _firestore.collection(_usersCollection).doc(user.id).update({
+      await _firestore.collection(FC.users).doc(user.id).update({
         'lastActiveAt': FieldValue.serverTimestamp(),
         'isOnline': isOnline,
       });
@@ -546,34 +545,41 @@ class AuthStateNotifier extends AutoDisposeAsyncNotifier<User?> {
     }
   }
 
-  // Aún mantenemos isUserOnline por compatibilidad si se usa, pero la lógica visual estará en UI.
+  /// Determina si un usuario está "online" basado en su último timestamp de actividad.
+  /// Se considera online si estuvo activo hace menos de 10 minutos.
+  static bool isOnlineFromTimestamp(DateTime? lastActiveAt) {
+    if (lastActiveAt == null) return false;
+    return DateTime.now().difference(lastActiveAt).inMinutes < 10;
+  }
+
+  @Deprecated('Usar AuthStateNotifier.isOnlineFromTimestamp(user.lastActiveAt) en su lugar')
   bool isUserOnline(String userId) {
-    // Para simplificar, si la UI necesita saber si está online, puede revisar user.lastActiveAt.
-    // Esta función la dejamos true por defecto si alguien más la usa todavía.
+    // Retornamos true por compatibilidad, pero se debe migrar a la lógica de timestamps.
     return true;
   }
 
+
   Future<void> updateUserRole(String userId, UserRole newRole) async {
-    await _firestore.collection(_usersCollection).doc(userId).update({
+    await _firestore.collection(FC.users).doc(userId).update({
       'role': newRole.name,
     });
   }
 
   Future<void> banUser(String userId, bool ban) async {
-    await _firestore.collection(_usersCollection).doc(userId).update({
+    await _firestore.collection(FC.users).doc(userId).update({
       'isBanned': ban,
     });
   }
 
   Future<void> trashUser(String userId) async {
-    await _firestore.collection(_usersCollection).doc(userId).update({
+    await _firestore.collection(FC.users).doc(userId).update({
       'isDeleted': true,
       'deletedAt': FieldValue.serverTimestamp(),
     });
   }
 
   Future<void> restoreUser(String userId) async {
-    final doc = await _firestore.collection(_usersCollection).doc(userId).get();
+    final doc = await _firestore.collection(FC.users).doc(userId).get();
     if (!doc.exists) throw Exception('Usuario no encontrado');
 
     final data = doc.data()!;
@@ -595,7 +601,7 @@ class AuthStateNotifier extends AutoDisposeAsyncNotifier<User?> {
 
   Future<void> purgeUser(String userId) async {
     // Elimina el documento permanentemente de Firestore
-    await _firestore.collection(_usersCollection).doc(userId).delete();
+    await _firestore.collection(FC.users).doc(userId).delete();
   }
 
   Future<void> updateVaultAccess({
@@ -606,13 +612,13 @@ class AuthStateNotifier extends AutoDisposeAsyncNotifier<User?> {
     final field = (vault == 'lambda')
         ? 'canAccessVaultLambda'
         : 'canAccessVaultMartian';
-    await _firestore.collection(_usersCollection).doc(userId).update({
+    await _firestore.collection(FC.users).doc(userId).update({
       field: hasAccess,
     });
   }
 
   Future<void> toggleFeatureBlock(String userId, String feature) async {
-    final doc = await _firestore.collection(_usersCollection).doc(userId).get();
+    final doc = await _firestore.collection(FC.users).doc(userId).get();
     if (!doc.exists) return;
 
     final currentBlocks = List<String>.from(
@@ -620,11 +626,11 @@ class AuthStateNotifier extends AutoDisposeAsyncNotifier<User?> {
     );
 
     if (currentBlocks.contains(feature)) {
-      await _firestore.collection(_usersCollection).doc(userId).update({
+      await _firestore.collection(FC.users).doc(userId).update({
         'blockedFeatures': FieldValue.arrayRemove([feature]),
       });
     } else {
-      await _firestore.collection(_usersCollection).doc(userId).update({
+      await _firestore.collection(FC.users).doc(userId).update({
         'blockedFeatures': FieldValue.arrayUnion([feature]),
       });
     }
@@ -651,7 +657,7 @@ class AuthStateNotifier extends AutoDisposeAsyncNotifier<User?> {
         debugPrint('Error en geocoding: $e');
       }
 
-      await _firestore.collection(_usersCollection).doc(user.id).update({
+      await _firestore.collection(FC.users).doc(user.id).update({
         'firstLoginAt': FieldValue.serverTimestamp(),
         'firstLoginLocation': locationName,
       });
@@ -690,9 +696,7 @@ class AuthStateNotifier extends AutoDisposeAsyncNotifier<User?> {
       }
     }
 
-    // RESTRICCIÓN DE RED GALÁCTICA (Seba Edition) 🛰️
-    final isAdmin =
-        user.role == UserRole.Admin || user.role == UserRole.SuperAdmin;
+    final isAdmin = user.isAdmin;
 
     if (!isAdmin && !user.contactIds.contains(finalReceiverId)) {
       throw Exception(
@@ -787,7 +791,7 @@ class AuthStateNotifier extends AutoDisposeAsyncNotifier<User?> {
 
     // 4. Asegurar que el receptor esté en la lista de contactIds del usuario
     if (!user.contactIds.contains(finalReceiverId)) {
-      await _firestore.collection(_usersCollection).doc(user.id).update({
+      await _firestore.collection(FC.users).doc(user.id).update({
         'contactIds': FieldValue.arrayUnion([finalReceiverId]),
       });
       // Actualizar estado local
@@ -798,7 +802,7 @@ class AuthStateNotifier extends AutoDisposeAsyncNotifier<User?> {
   }
 
   Future<void> toggleMessageRestriction(String userId, bool restricted) async {
-    await _firestore.collection(_usersCollection).doc(userId).update({
+    await _firestore.collection(FC.users).doc(userId).update({
       'isMessageRestricted': restricted,
     });
   }
@@ -809,12 +813,12 @@ class AuthStateNotifier extends AutoDisposeAsyncNotifier<User?> {
     if (query.trim().isEmpty) return null;
     
     // 1. Por ID exacto
-    final doc = await _firestore.collection(_usersCollection).doc(query.trim()).get();
+    final doc = await _firestore.collection(FC.users).doc(query.trim()).get();
     if (doc.exists) return User.fromMap(doc.data()!, doc.id);
 
     // 2. Por Apodo exacto
     final apodoSnap = await _firestore
-        .collection(_usersCollection)
+        .collection(FC.users)
         .where('apodo', isEqualTo: query.trim())
         .limit(1)
         .get();
@@ -824,7 +828,7 @@ class AuthStateNotifier extends AutoDisposeAsyncNotifier<User?> {
 
     // 3. Por Nombre exacto
     final nombreSnap = await _firestore
-        .collection(_usersCollection)
+        .collection(FC.users)
         .where('nombre', isEqualTo: query.trim())
         .limit(1)
         .get();
@@ -840,7 +844,7 @@ class AuthStateNotifier extends AutoDisposeAsyncNotifier<User?> {
     if (user == null) return;
     if (user.id == contactId) return;
 
-    await _firestore.collection(_usersCollection).doc(user.id).update({
+    await _firestore.collection(FC.users).doc(user.id).update({
       'contactIds': FieldValue.arrayUnion([contactId]),
     });
     
@@ -856,7 +860,7 @@ class AuthStateNotifier extends AutoDisposeAsyncNotifier<User?> {
     final user = state.valueOrNull;
     if (user == null) return;
 
-    await _firestore.collection(_usersCollection).doc(user.id).update({
+    await _firestore.collection(FC.users).doc(user.id).update({
       'contactIds': FieldValue.arrayRemove([contactId]),
     });
 
@@ -870,7 +874,7 @@ class AuthStateNotifier extends AutoDisposeAsyncNotifier<User?> {
     final user = state.valueOrNull;
     if (user == null) return;
 
-    await _firestore.collection(_usersCollection).doc(user.id).update({
+    await _firestore.collection(FC.users).doc(user.id).update({
       'blockedUsers': FieldValue.arrayUnion([targetId]),
     });
 
@@ -883,7 +887,7 @@ class AuthStateNotifier extends AutoDisposeAsyncNotifier<User?> {
     final user = state.valueOrNull;
     if (user == null) return;
 
-    await _firestore.collection(_usersCollection).doc(user.id).update({
+    await _firestore.collection(FC.users).doc(user.id).update({
       'blockedUsers': FieldValue.arrayRemove([targetId]),
     });
 
@@ -908,7 +912,7 @@ class AuthStateNotifier extends AutoDisposeAsyncNotifier<User?> {
       }, SetOptions(merge: true));
 
       // 2. Incremento por Usuario
-      final userRef = _firestore.collection(_usersCollection).doc(userId);
+      final userRef = _firestore.collection(FC.users).doc(userId);
       batch.update(userRef, {'visitCount': FieldValue.increment(1)});
 
       await batch.commit();
@@ -937,7 +941,7 @@ class AuthStateNotifier extends AutoDisposeAsyncNotifier<User?> {
       createdAt: DateTime.now(),
     );
 
-    await _firestore.collection('contact_requests').add(request.toMap());
+    await _firestore.collection(FC.contactRequests).add(request.toMap());
   }
 
   /// Acepta o rechaza una solicitud de contacto
@@ -951,7 +955,7 @@ class AuthStateNotifier extends AutoDisposeAsyncNotifier<User?> {
     try {
       if (newStatus == ContactRequestStatus.accepted) {
         final doc = await _firestore
-            .collection('contact_requests')
+            .collection(FC.contactRequests)
             .doc(requestId)
             .get();
         if (!doc.exists) return;
@@ -959,19 +963,19 @@ class AuthStateNotifier extends AutoDisposeAsyncNotifier<User?> {
 
         final batch = _firestore.batch();
         // 1. Marcar como aceptado
-        batch.update(_firestore.collection('contact_requests').doc(requestId), {
+        batch.update(_firestore.collection(FC.contactRequests).doc(requestId), {
           'status': ContactRequestStatus.accepted.name,
         });
 
         // 2. Añadir mutuamente a contactIds
         batch.update(
-          _firestore.collection(_usersCollection).doc(request.fromId),
+          _firestore.collection(FC.users).doc(request.fromId),
           {
             'contactIds': FieldValue.arrayUnion([request.toId]),
           },
         );
         batch.update(
-          _firestore.collection(_usersCollection).doc(request.toId),
+          _firestore.collection(FC.users).doc(request.toId),
           {
             'contactIds': FieldValue.arrayUnion([request.fromId]),
           },
@@ -979,7 +983,7 @@ class AuthStateNotifier extends AutoDisposeAsyncNotifier<User?> {
 
         await batch.commit();
       } else {
-        await _firestore.collection('contact_requests').doc(requestId).update({
+        await _firestore.collection(FC.contactRequests).doc(requestId).update({
           'status': newStatus.name,
         });
       }
@@ -996,7 +1000,7 @@ class AuthStateNotifier extends AutoDisposeAsyncNotifier<User?> {
 
     try {
       final visitRef = _firestore
-          .collection(_usersCollection)
+          .collection(FC.users)
           .doc(targetUserId)
           .collection('profile_visitors')
           .doc(user.id);
@@ -1027,7 +1031,7 @@ class AuthStateNotifier extends AutoDisposeAsyncNotifier<User?> {
     if (user == null) throw Exception('No hay sesión activa.');
 
     final adminSnap = await _firestore
-        .collection('users')
+        .collection(FC.users)
         .where('role', whereIn: [UserRole.Admin.name, UserRole.SuperAdmin.name])
         .get();
 
@@ -1076,7 +1080,7 @@ final authProvider = AutoDisposeAsyncNotifierProvider<AuthStateNotifier, User?>(
 final allUsersProvider = StreamProvider.autoDispose<List<User>>((ref) {
   return ref
       .watch(firestoreProvider)
-      .collection(_usersCollection)
+      .collection(FC.users)
       .snapshots()
       .map((snapshot) {
         return snapshot.docs.map((doc) {

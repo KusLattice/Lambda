@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lambda_app/utils/image_utils.dart';
 import 'package:intl/intl.dart';
@@ -105,8 +106,7 @@ class _ChatConversationScreenState
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final me = ref.read(authProvider).valueOrNull;
       if (me != null) {
-        final isAdmin =
-            me.role == UserRole.Admin || me.role == UserRole.SuperAdmin;
+        final isAdmin = me.isAdmin;
 
         // Identidad local para construir el chatId de envío
         // Si el otro es el sistema, yo soy humano. Si el otro es humano y yo admin, soy el sistema.
@@ -151,8 +151,7 @@ class _ChatConversationScreenState
     try {
       final me = ref.read(authProvider).valueOrNull;
       if (me == null) return;
-      final isAdmin =
-          me.role == UserRole.Admin || me.role == UserRole.SuperAdmin;
+      final isAdmin = me.isAdmin;
       final useSystemIdentity = widget.isSystemThread &&
           isAdmin &&
           widget.otherUserId != 'system_admin';
@@ -185,8 +184,7 @@ class _ChatConversationScreenState
     try {
       final me = ref.read(authProvider).valueOrNull;
       if (me == null) return;
-      final isAdmin =
-          me.role == UserRole.Admin || me.role == UserRole.SuperAdmin;
+      final isAdmin = me.isAdmin;
       final useSystemIdentity = widget.isSystemThread &&
           isAdmin &&
           widget.otherUserId != 'system_admin';
@@ -220,8 +218,7 @@ class _ChatConversationScreenState
     try {
       final me = ref.read(authProvider).valueOrNull;
       if (me == null) return;
-      final isAdmin =
-          me.role == UserRole.Admin || me.role == UserRole.SuperAdmin;
+      final isAdmin = me.isAdmin;
       final useSystemIdentity = widget.isSystemThread &&
           isAdmin &&
           widget.otherUserId != 'system_admin';
@@ -283,16 +280,16 @@ class _ChatConversationScreenState
   /// Construye el título del AppBar.
   /// Si el usuario tiene permiso de ver el perfil (contacto o Admin),
   /// el Row es clicable y navega a [PublicProfileScreen].
-  Widget _buildAppBarTitle(BuildContext context, user) {
+  Widget _buildAppBarTitle(BuildContext context, User? user) {
+    final otherUserAsync = ref.watch(userDocumentStreamProvider(widget.otherUserId));
+    
     // Regla de acceso al perfil:
     // - El otro usuario está en la lista de contactos del usuario actual, O
     // - El usuario actual es Admin o SuperAdmin.
     final canViewProfile =
         user != null &&
         widget.otherUserId != 'system_admin' &&
-        (user.contactIds.contains(widget.otherUserId) ||
-            user.role == UserRole.Admin ||
-            user.role == UserRole.SuperAdmin);
+        (user.contactIds.contains(widget.otherUserId) || user.isAdmin);
 
     final isSystem = widget.otherUserId == 'system_admin';
 
@@ -313,28 +310,66 @@ class _ChatConversationScreenState
           : null,
     );
 
+    final isOnline = otherUserAsync.valueOrNull != null && 
+        AuthStateNotifier.isOnlineFromTimestamp((otherUserAsync.valueOrNull!.data() as Map<String, dynamic>?)?['lastActiveAt'] is Timestamp 
+            ? ((otherUserAsync.valueOrNull!.data() as Map<String, dynamic>?)?['lastActiveAt'] as Timestamp).toDate() 
+            : null);
+
     final nameRow = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        avatar,
+        Stack(
+          children: [
+            avatar,
+            if (isOnline && !isSystem)
+              Positioned(
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: Colors.greenAccent,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.black, width: 2),
+                  ),
+                ),
+              ),
+          ],
+        ),
         const SizedBox(width: 10),
         Flexible(
-          child: Text(
-            widget.otherUserId == 'system_admin'
-                ? 'ADMINISTRACIÓN λ'
-                : widget.otherUserName,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: isSystem ? Colors.amber : Colors.greenAccent,
-              fontFamily: 'Courier',
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-              // Decoración underline cuando es enlace activo
-              decoration: canViewProfile
-                  ? TextDecoration.underline
-                  : TextDecoration.none,
-              decorationColor: Colors.greenAccent.withValues(alpha: 0.6),
-            ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                widget.otherUserId == 'system_admin'
+                    ? 'ADMINISTRACIÓN λ'
+                    : widget.otherUserName,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: isSystem ? Colors.amber : Colors.greenAccent,
+                  fontFamily: 'Courier',
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  decoration: canViewProfile
+                      ? TextDecoration.underline
+                      : TextDecoration.none,
+                  decorationColor: Colors.greenAccent.withValues(alpha: 0.6),
+                ),
+              ),
+              if (isOnline && !isSystem)
+                const Text(
+                  'CONECTADO',
+                  style: TextStyle(
+                    color: Colors.greenAccent,
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1,
+                  ),
+                ),
+            ],
           ),
         ),
         if (canViewProfile) ...[
@@ -371,8 +406,7 @@ class _ChatConversationScreenState
     }
 
     final currentUser = me!; // Seguro por el check anterior
-    final isAdmin =
-        currentUser.role == UserRole.Admin || currentUser.role == UserRole.SuperAdmin;
+    final isAdmin = currentUser.isAdmin;
     // Identidad local dinámica
     final localId = (widget.isSystemThread &&
             isAdmin &&
@@ -465,7 +499,7 @@ class _ChatConversationScreenState
                         return _ChatBubble(
                           message: msg,
                           isMe: isMe,
-                          myUserRole: currentUser.role,
+                          isAdmin: currentUser.isAdmin,
                           onImageTap: (url) =>
                               _viewImageFullScreen(context, url),
                           onVideoTap:
@@ -621,22 +655,21 @@ class _ChatBubble extends ConsumerWidget {
   final Message message;
   final bool isMe;
 
-  /// Rol del usuario actual (para permisos de Admin)
-  final UserRole? myUserRole;
+  /// Si el usuario actual es Admin
+  final bool isAdmin;
   final void Function(String url) onImageTap;
   final void Function(String url) onVideoTap;
 
   const _ChatBubble({
     required this.message,
     required this.isMe,
-    required this.myUserRole,
+    required this.isAdmin,
     required this.onImageTap,
     required this.onVideoTap,
   });
 
   /// Solo el autor o un Admin/SuperAdmin puede mover a papelera.
-  bool get _canDelete =>
-      isMe || myUserRole == UserRole.Admin || myUserRole == UserRole.SuperAdmin;
+  bool get _canDelete => isMe || isAdmin;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

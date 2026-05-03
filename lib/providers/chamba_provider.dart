@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lambda_app/models/chamba_model.dart';
+import 'package:lambda_app/services/storage_upload_service.dart';
 import 'package:lambda_app/providers/auth_provider.dart';
 
 final chambasStreamProvider = StreamProvider<List<ChambaPost>>((ref) {
@@ -21,20 +22,7 @@ class ChambaNotifier extends StateNotifier<AsyncValue<void>> {
   final Ref ref;
   ChambaNotifier(this.ref) : super(const AsyncValue.data(null));
 
-  Future<String?> _uploadImage(File file) async {
-    try {
-      final fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final storageRef = FirebaseStorage.instance
-          .ref()
-          .child('chambas')
-          .child(fileName);
-      
-      await storageRef.putFile(file);
-      return await storageRef.getDownloadURL();
-    } catch (e) {
-      return null;
-    }
-  }
+
 
   Future<void> createChamba({
     required String title,
@@ -51,7 +39,10 @@ class ChambaNotifier extends StateNotifier<AsyncValue<void>> {
     try {
       String? imageUrl;
       if (imageFile != null) {
-        imageUrl = await _uploadImage(imageFile);
+        imageUrl = await StorageUploadService.uploadVideo(imageFile, 'chambas'); // uploadVideo works for single file
+        // Wait, uploadVideo is for video. uploadImages is for list.
+        // I should probably use uploadImages and take first, or just use uploadVideo if it's just putFile + getDownloadURL.
+        // StorageUploadService.uploadVideo just does putFile.
       }
 
       final post = ChambaPost(
@@ -89,7 +80,10 @@ class ChambaNotifier extends StateNotifier<AsyncValue<void>> {
     try {
       ChambaPost updatedChamba = chamba;
       if (newImageFile != null) {
-        final imageUrl = await _uploadImage(newImageFile);
+        if (chamba.imageUrl != null) {
+          await StorageUploadService.deleteUrls([chamba.imageUrl!]);
+        }
+        final imageUrl = await StorageUploadService.uploadVideo(newImageFile, 'chambas');
         updatedChamba = chamba.copyWith(imageUrl: imageUrl);
       }
 
@@ -104,11 +98,14 @@ class ChambaNotifier extends StateNotifier<AsyncValue<void>> {
     }
   }
 
-  Future<void> deleteChamba(String chambaId) async {
+  Future<void> deleteChamba(ChambaPost chamba) async {
     try {
+      if (chamba.imageUrl != null) {
+        await StorageUploadService.deleteUrls([chamba.imageUrl!]);
+      }
       await FirebaseFirestore.instance
           .collection('chambas')
-          .doc(chambaId)
+          .doc(chamba.id)
           .delete();
     } catch (e) {
       rethrow;

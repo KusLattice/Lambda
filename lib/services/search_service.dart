@@ -9,13 +9,16 @@ import 'dart:math' as math;
 
 class SearchService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  late final GenerativeModel _model;
+  GenerativeModel? _model;
+  bool get _isGeminiReady => AppConfig.hasGeminiKey;
 
   SearchService() {
-    _model = GenerativeModel(
-      model: 'gemini-1.5-flash',
-      apiKey: AppConfig.geminiApiKey,
-    );
+    if (_isGeminiReady) {
+      _model = GenerativeModel(
+        model: 'gemini-1.5-flash',
+        apiKey: AppConfig.geminiApiKey,
+      );
+    }
   }
 
   /// Realiza la búsqueda en toda la app y sus bases de datos.
@@ -162,6 +165,9 @@ class SearchService {
     String query, {
     bool isAdmin = false,
   }) async {
+    if (!_isGeminiReady || _model == null) {
+      return {'categories': [], 'keywords': [], 'proximityIntent': ['false']};
+    }
     try {
       final categoriesList =
           'hospedaje, picás, mercado, chambas, secret_vault, random${isAdmin ? ", mensajes" : ""}';
@@ -200,7 +206,7 @@ REGLAS DE ORO:
 - Si la consulta es neutra ("Donde hay un hotel"), mapea correctamente a [hospedaje].
 - Sé extremadamente sensible a la jerga de terreno de los técnicos chilenos.
 ''';
-      final response = await _model.generateContent([Content.text(prompt)]);
+      final response = await _model!.generateContent([Content.text(prompt)]);
       var text = response.text?.trim() ?? '{}';
 
       // Limpieza de JSON si Gemini añade bloques de código
@@ -389,14 +395,20 @@ REGLAS DE ORO:
         double score = 0.0;
         if (subject.isNotEmpty && subject == queryLower) {
           score += 3.0;
-        } else if (subject.isNotEmpty && subject.contains(queryLower)) score += 1.5;
+        } else if (subject.isNotEmpty && subject.contains(queryLower)) {
+          score += 1.5;
+        }
         
         if (body.contains(queryLower)) score += 1.0;
 
         for (var kw in keywords) {
           var kwLower = _removeDiacritics(kw.toLowerCase());
-          if (subject.contains(kwLower)) score += 0.8;
-          if (body.contains(kwLower)) score += 0.4;
+          if (subject.contains(kwLower)) {
+            score += 0.8;
+          }
+          if (body.contains(kwLower)) {
+            score += 0.4;
+          }
         }
 
         if (score > 0) {

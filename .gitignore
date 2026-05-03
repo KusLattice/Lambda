@@ -66,3 +66,7 @@ devices.txt
 devices.json
 temp_news.json
 lint.txt
+
+# Code Dumps
+lambda_codigo_completo.txt
+*.codigo_completo.txt
